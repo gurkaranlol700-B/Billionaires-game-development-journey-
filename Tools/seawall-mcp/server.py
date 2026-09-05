@@ -2,6 +2,13 @@
 # requires-python = ">=3.10"
 # dependencies = ["mcp>=1.2.0"]
 # ///
+#
+# NOTE ON THE MCP SDK VERSION
+# ---------------------------
+# mcp 2.x renamed FastMCP to MCPServer and moved it from mcp.server.fastmcp to
+# mcp.server.mcpserver. The import below tries the new name first and falls
+# back to the old one, so this file runs on either version. The alternative --
+# pinning "mcp<2" -- would work today but leaves us stuck on a dead API.
 """
 Seawall MCP server
 ==================
@@ -31,7 +38,12 @@ import re
 import subprocess
 from pathlib import Path
 
-from mcp.server.fastmcp import FastMCP, Image
+try:
+    # mcp 2.x
+    from mcp.server.mcpserver import MCPServer as _Server, Image
+except ImportError:  # pragma: no cover
+    # mcp 1.x
+    from mcp.server.fastmcp import FastMCP as _Server, Image
 
 # ---------------------------------------------------------------------------
 # Paths. This file lives at <Project>/Tools/seawall-mcp/server.py, so the
@@ -43,15 +55,32 @@ PROJECT_NAME = "Seawall"
 UPROJECT = PROJECT_ROOT / f"{PROJECT_NAME}.uproject"
 
 # Where the engine lives. Override with the SEAWALL_ENGINE environment variable
-# if the engine is ever installed somewhere else.
-ENGINE_ROOT = Path(os.environ.get("SEAWALL_ENGINE", r"D:\Epic Games\UE_5.8"))
+# if the engine is ever installed somewhere else. The fallback list is tried in
+# order so this keeps working if the engine is later moved to D: to free up C:.
+_ENGINE_CANDIDATES = [
+    r"C:\Program Files\Epic Games\UE_5.8",
+    r"D:\Epic Games\UE_5.8",
+]
+
+
+def _find_engine() -> Path:
+    override = os.environ.get("SEAWALL_ENGINE")
+    if override:
+        return Path(override)
+    for candidate in _ENGINE_CANDIDATES:
+        if Path(candidate, "Engine", "Build", "BatchFiles", "Build.bat").exists():
+            return Path(candidate)
+    return Path(_ENGINE_CANDIDATES[0])
+
+
+ENGINE_ROOT = _find_engine()
 BUILD_BAT = ENGINE_ROOT / "Engine" / "Build" / "BatchFiles" / "Build.bat"
 EDITOR_CMD = ENGINE_ROOT / "Engine" / "Binaries" / "Win64" / "UnrealEditor-Cmd.exe"
 
 LOG_FILE = PROJECT_ROOT / "Saved" / "Logs" / f"{PROJECT_NAME}.log"
 SCREENSHOT_DIR = PROJECT_ROOT / "Saved" / "Screenshots"
 
-mcp = FastMCP("seawall")
+mcp = _Server("seawall")
 
 
 def _fail(msg: str) -> str:

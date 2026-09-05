@@ -40,3 +40,6 @@ desktop.ini
 # --- Local-only overrides --------------------------------------------------
 # Machine-specific settings that should never be shared.
 Config/*Local*.ini
+
+# Build logs from our own tooling
+*.log
