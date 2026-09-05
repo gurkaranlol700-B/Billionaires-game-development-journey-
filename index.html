@@ -408,6 +408,8 @@ ul.plain li { margin-bottom: 7px; max-width: 66ch; }
       abandoned concrete mining island off Nagasaki. Four to five hours, scarce combat,
       built in Unreal Engine 5.8. This is the working record &mdash; every decision, every
       thing that broke, and how it got fixed.
+      <br><a href="/pipeline.html"><strong>The Workstation &rarr;</strong></a> &mdash; which tool
+      does which job, how sound gets made, and the performance budget.
     </p>
 
     <div class="board">
@@ -804,6 +806,96 @@ Result: <span class="hl-good">Succeeded</span>          Total execution time: 76
           Every future session appends here and pushes; the site updates itself. Readable from a
           phone, anywhere, without needing the machine that's building the game.
         </p>
+      </div>
+    </div>
+
+    <!-- 10 -->
+    <div class="entry">
+      <div class="seq">10</div>
+      <div>
+        <div class="entry-head"><h3>The project itself</h3><span class="tag done">Compiles</span></div>
+        <p>
+          Seawall is a <strong>clean C++ module, not a template copy.</strong> Unreal's First Person
+          template ships a gun and a projectile &mdash; the opposite of what this game wants &mdash; so
+          starting from it would only mean deleting things. The character gets written properly in C++
+          at M1 instead.
+        </p>
+        <p>Wired in from the first commit, because retrofitting any of it is expensive:</p>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Module</th><th>Why now rather than later</th></tr></thead>
+            <tbody>
+              <tr><td><code>GameplayAbilities</code></td><td>GAS is replication-native &mdash; this is what keeps co-op cheap at M10</td></tr>
+              <tr><td><code>EnhancedInput</code></td><td>Action/context based input rather than raw key binds</td></tr>
+              <tr><td><code>StateTree</code>, <code>AIModule</code></td><td>Creature behaviour; StateTree is what Epic is moving to over Behavior Trees</td></tr>
+              <tr><td><code>NavigationSystem</code></td><td>Pathing for everything that hunts you</td></tr>
+              <tr><td><code>LogSeawall</code></td><td>Our own log category, so our messages filter out of Unreal's very noisy log</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Rendering defaults, chosen for the look</h3>
+        <pre>r.DynamicGlobalIlluminationMethod=1   <span class="dim">Lumen GI</span>
+r.Lumen.HardwareRayTracing=1         <span class="dim">the 5060 Ti has the hardware, so use it</span>
+r.Nanite.ProjectEnabled=True         <span class="dim">Megascans at full density, no triangle budget</span>
+r.Shadow.Virtual.Enable=1            <span class="dim">torch beams across rubble read correctly</span>
+r.AntiAliasingMethod=4               <span class="dim">TSR upscaling for headroom</span>
+r.DefaultFeature.AutoExposure.ExtendDefaultLuminanceRange=True</pre>
+        <p>
+          That last line matters more than it looks: without extended luminance range an unlit
+          corridor comes out washed-out grey instead of genuinely dark. In a game whose whole
+          tension depends on not being able to see, that is the difference between scary and cheap.
+        </p>
+        <pre class="good">[6/7] Link [x64] UnrealEditor-Seawall.dll
+Result: <span class="hl-good">Succeeded</span>          Total execution time: 53.00 seconds</pre>
+      </div>
+    </div>
+
+    <!-- 11 -->
+    <div class="entry">
+      <div class="seq">11</div>
+      <div>
+        <div class="entry-head"><h3>The MCP SDK moved under us</h3><span class="tag fixed">Fixed</span></div>
+        <p>Testing the server rather than assuming it worked caught this immediately:</p>
+        <pre class="bad"><span class="hl-bad">ModuleNotFoundError: No module named 'mcp.server.fastmcp'.</span>
+This is mcp 2.x, where FastMCP was renamed to MCPServer
+(from mcp.server.mcpserver import MCPServer) and other APIs changed</pre>
+        <p>
+          Two ways out: pin <code>mcp&lt;2</code> and stay on a dead API, or migrate. We did neither
+          exactly &mdash; the import now tries the new name and falls back to the old, so the same
+          file runs on either SDK version:
+        </p>
+        <pre class="good">try:
+    <span class="dim"># mcp 2.x</span>
+    from mcp.server.mcpserver import MCPServer as _Server, Image
+except ImportError:
+    <span class="dim"># mcp 1.x</span>
+    from mcp.server.fastmcp import FastMCP as _Server, Image</pre>
+        <div class="note">
+          <span class="lbl">This affects blender-mcp too</span>
+          <p>The Blender MCP server has the identical pattern &mdash;
+          <code>dependencies = ["mcp&gt;=1.2.0"]</code> with no upper bound, importing
+          <code>mcp.server.fastmcp</code>. It works today <em>only</em> because uv cached an old
+          resolution. On a fresh machine, or through <code>RESTORE.ps1</code>, it would fail the same
+          way. The same three-line fix applies.</p>
+        </div>
+        <p>
+          Then <code>project_info()</code> earned its keep on first run by catching a bug in its own
+          author's work &mdash; the engine path had been defaulted to <code>D:</code> while the engine
+          actually landed on <code>C:</code>:
+        </p>
+        <pre class="bad">Engine root  : D:\Epic Games\UE_5.8  <span class="hl-bad">(MISSING)</span>
+Build.bat    : <span class="hl-bad">MISSING</span></pre>
+        <p>It now probes candidate paths in order, so moving the engine to D: later needs no edit:</p>
+        <pre class="good">Engine root  : C:\Program Files\Epic Games\UE_5.8  <span class="hl-good">(found)</span>
+Build.bat    : <span class="hl-good">found</span>
+C++ modules  : Seawall
+Editor binary: built</pre>
+        <div class="note lesson">
+          <span class="lbl">Lesson</span>
+          <p>A "sanity check" tool is worth writing <em>first</em>, not last. Six tools registered and
+          the very first call surfaced a wrong path that would otherwise have shown up as a confusing
+          build failure days later.</p>
+        </div>
       </div>
     </div>
 

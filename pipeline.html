@@ -1,0 +1,683 @@
+<title>Seawall Workstation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* ==========================================================================
+   SEAWALL BUILD LOG
+   Dark-first: bare :root carries the complete dark palette, light overrides
+   under prefers-color-scheme:light and [data-theme="light"].
+   Palette is Gunkanjima -- wet concrete, sea dark, oxide rust on rebar.
+   ========================================================================== */
+
+:root {
+  /* grounds */
+  --g-0:  #0B0F11;   /* page ground -- sea-dark, blue-green cast */
+  --g-1:  #12181B;   /* raised surface */
+  --g-2:  #1A2226;   /* card */
+  --g-3:  #232D32;   /* inset / code */
+  --line: #2C383E;
+  --line-soft: #202A2F;
+
+  /* text */
+  --tx-1: #E4E9EA;   /* primary */
+  --tx-2: #A3B0B4;   /* secondary */
+  --tx-3: #6E7F85;   /* tertiary / labels */
+
+  /* accent + semantic */
+  --oxide:     #C05F32;   /* THE accent -- rust bleeding through concrete */
+  --oxide-dim: #8E4626;
+  --oxide-wash:#2A1912;
+  --verdigris: #5A9B85;   /* done */
+  --verdigris-wash:#132420;
+  --sodium:    #D9A441;   /* in progress / pending */
+  --sodium-wash:#241C0E;
+  --blood:     #C4483F;   /* blocked / failed */
+  --blood-wash:#26120F;
+
+  --shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 24px -12px rgba(0,0,0,.7);
+
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --g-0:  #E7E9E7;
+    --g-1:  #F1F2F0;
+    --g-2:  #FAFAF9;
+    --g-3:  #E4E7E5;
+    --line: #C9CFCC;
+    --line-soft: #DBE0DD;
+    --tx-1: #131A1C;
+    --tx-2: #4A585C;
+    --tx-3: #6E7F85;
+    --oxide:     #9C4520;
+    --oxide-dim: #C05F32;
+    --oxide-wash:#F6E7DF;
+    --verdigris: #2F6B57;
+    --verdigris-wash:#E0EDE8;
+    --sodium:    #8A6212;
+    --sodium-wash:#F5EBD6;
+    --blood:     #A32E26;
+    --blood-wash:#F7E2E0;
+    --shadow: 0 1px 2px rgba(19,26,28,.06), 0 8px 24px -14px rgba(19,26,28,.22);
+  }
+}
+
+:root[data-theme="light"] {
+  --g-0:  #E7E9E7;
+  --g-1:  #F1F2F0;
+  --g-2:  #FAFAF9;
+  --g-3:  #E4E7E5;
+  --line: #C9CFCC;
+  --line-soft: #DBE0DD;
+  --tx-1: #131A1C;
+  --tx-2: #4A585C;
+  --tx-3: #6E7F85;
+  --oxide:     #9C4520;
+  --oxide-dim: #C05F32;
+  --oxide-wash:#F6E7DF;
+  --verdigris: #2F6B57;
+  --verdigris-wash:#E0EDE8;
+  --sodium:    #8A6212;
+  --sodium-wash:#F5EBD6;
+  --blood:     #A32E26;
+  --blood-wash:#F7E2E0;
+  --shadow: 0 1px 2px rgba(19,26,28,.06), 0 8px 24px -14px rgba(19,26,28,.22);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--g-0);
+  color: var(--tx-1);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: 900px; margin: 0 auto; padding: 0 24px 96px; }
+
+/* ---------- masthead ---------- */
+
+.mast {
+  border-bottom: 1px solid var(--line);
+  padding: 56px 0 28px;
+  margin-bottom: 40px;
+}
+.eyebrow {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--oxide);
+  margin: 0 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.eyebrow::before {
+  content: "";
+  width: 28px; height: 2px;
+  background: var(--oxide);
+  flex: none;
+}
+h1 {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(2.6rem, 9vw, 4.6rem);
+  line-height: .94;
+  letter-spacing: -.035em;
+  margin: 0 0 16px;
+  text-wrap: balance;
+}
+.dek {
+  font-size: 1.06rem;
+  color: var(--tx-2);
+  max-width: 62ch;
+  margin: 0;
+}
+.dek strong { color: var(--tx-1); font-weight: 600; }
+
+/* ---------- status board ---------- */
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  background: var(--line-soft);
+  border: 1px solid var(--line-soft);
+  margin: 32px 0 0;
+}
+.cell { background: var(--g-1); padding: 14px 16px; }
+.cell .k {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  display: block;
+  margin-bottom: 6px;
+}
+.cell .v {
+  font-family: var(--f-display);
+  font-size: 1.22rem;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums;
+}
+.cell .v.ok   { color: var(--verdigris); }
+.cell .v.warn { color: var(--sodium); }
+
+/* ---------- section headings ---------- */
+
+h2 {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 1.6rem;
+  letter-spacing: -.02em;
+  margin: 64px 0 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  text-wrap: balance;
+}
+h3 {
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: 1.06rem;
+  letter-spacing: -.005em;
+  margin: 28px 0 10px;
+}
+p { margin: 0 0 14px; max-width: 68ch; }
+a { color: var(--oxide); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--oxide);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ---------- log entries ---------- */
+
+.log { display: flex; flex-direction: column; gap: 0; }
+
+.entry {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: 0 22px;
+  padding: 30px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.entry:last-child { border-bottom: none; }
+
+.seq {
+  font-family: var(--f-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx-3);
+  padding-top: 4px;
+  position: relative;
+}
+.seq::after {
+  content: "";
+  position: absolute;
+  left: 0; top: 30px; bottom: -34px;
+  width: 1px;
+  background: var(--line-soft);
+}
+.entry:last-child .seq::after { display: none; }
+
+.entry-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.entry-head h3 { margin: 0; font-size: 1.16rem; }
+
+.tag {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.tag.done    { color: var(--verdigris); border-color: var(--verdigris); background: var(--verdigris-wash); }
+.tag.running { color: var(--sodium);    border-color: var(--sodium);    background: var(--sodium-wash); }
+.tag.fixed   { color: var(--oxide);     border-color: var(--oxide);     background: var(--oxide-wash); }
+.tag.you     { color: var(--tx-2);      border-color: var(--line);      background: var(--g-2); }
+
+/* ---------- evidence blocks ---------- */
+
+pre {
+  font-family: var(--f-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  background: var(--g-3);
+  border: 1px solid var(--line-soft);
+  border-left: 2px solid var(--tx-3);
+  padding: 13px 15px;
+  margin: 14px 0;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--tx-2);
+}
+pre.bad  { border-left-color: var(--blood); }
+pre.good { border-left-color: var(--verdigris); }
+pre b { color: var(--tx-1); font-weight: 600; }
+pre .hl-bad  { color: var(--blood); font-weight: 600; }
+pre .hl-good { color: var(--verdigris); font-weight: 600; }
+pre .dim { color: var(--tx-3); }
+
+code {
+  font-family: var(--f-mono);
+  font-size: .88em;
+  background: var(--g-3);
+  border: 1px solid var(--line-soft);
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+pre code { background: none; border: none; padding: 0; white-space: pre; }
+
+/* ---------- tables ---------- */
+
+.tw { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line-soft); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 460px; }
+th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line-soft); }
+th {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  font-weight: 500;
+  background: var(--g-1);
+}
+tbody tr:last-child td { border-bottom: none; }
+td.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.ok  { color: var(--verdigris); font-family: var(--f-mono); font-size: 12px; font-weight: 600; }
+
+/* ---------- callout ---------- */
+
+.note {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--oxide);
+  background: var(--g-1);
+  padding: 15px 18px;
+  margin: 18px 0;
+}
+.note .lbl {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--oxide);
+  display: block;
+  margin-bottom: 7px;
+}
+.note p:last-child { margin-bottom: 0; }
+.note.lesson { border-left-color: var(--verdigris); }
+.note.lesson .lbl { color: var(--verdigris); }
+
+/* ---------- story block ---------- */
+
+.acts { display: grid; gap: 1px; background: var(--line-soft); border: 1px solid var(--line-soft); margin: 18px 0; }
+.act { background: var(--g-1); padding: 16px 18px; }
+.act .n {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--oxide);
+  display: block;
+  margin-bottom: 6px;
+}
+.act h4 { font-family: var(--f-display); font-size: 1.02rem; font-weight: 700; margin: 0 0 6px; letter-spacing: -.01em; }
+.act p { margin: 0; font-size: .94rem; color: var(--tx-2); max-width: none; }
+
+/* ---------- checklist ---------- */
+
+ul.check { list-style: none; padding: 0; margin: 16px 0; display: flex; flex-direction: column; gap: 2px; }
+ul.check li {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  align-items: baseline;
+  padding: 7px 10px;
+  background: var(--g-1);
+  border-left: 2px solid var(--line);
+  font-size: .95rem;
+}
+ul.check li::before { font-family: var(--f-mono); font-size: 12px; font-weight: 600; }
+ul.check li.d { border-left-color: var(--verdigris); color: var(--tx-2); }
+ul.check li.d::before { content: "[x]"; color: var(--verdigris); }
+ul.check li.r { border-left-color: var(--sodium); }
+ul.check li.r::before { content: "[~]"; color: var(--sodium); }
+ul.check li.o::before { content: "[ ]"; color: var(--tx-3); }
+ul.check li.y { border-left-color: var(--oxide); }
+ul.check li.y::before { content: "[!]"; color: var(--oxide); }
+
+ul.plain { margin: 12px 0; padding-left: 20px; }
+ul.plain li { margin-bottom: 7px; max-width: 66ch; }
+
+/* ---------- footer ---------- */
+
+.foot {
+  margin-top: 72px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  color: var(--tx-3);
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 620px) {
+  .entry { grid-template-columns: 1fr; gap: 0; }
+  .seq { padding-top: 0; margin-bottom: 8px; }
+  .seq::after { display: none; }
+  .wrap { padding: 0 18px 64px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+<div class="wrap">
+
+  <header class="mast">
+    <p class="eyebrow">Seawall &middot; Working Method</p>
+    <h1>THE WORKSTATION</h1>
+    <p class="dek">
+      Which tool does which job, how assets travel from an idea to the island, where sound comes
+      from, and the performance discipline that starts on <strong>day one</strong> rather than
+      the month before shipping. <a href="/">&larr; back to the build log</a>
+    </p>
+
+    <div class="board">
+      <div class="cell"><span class="k">Frame budget</span><span class="v">16.6 ms</span></div>
+      <div class="cell"><span class="k">Target</span><span class="v">1080p / 60</span></div>
+      <div class="cell"><span class="k">Build first</span><span class="v ok">World</span></div>
+      <div class="cell"><span class="k">Never together</span><span class="v warn">UE + ComfyUI</span></div>
+    </div>
+  </header>
+
+  <h2>What to build first</h2>
+
+  <p>
+    You asked: combat, environment, or world? <strong>The world &mdash; and specifically one
+    corridor, finished to shipping quality.</strong> Four reasons, in order of how much they matter:
+  </p>
+
+  <ul class="plain">
+    <li><strong>Horror lives in the room, not the fight.</strong> Resident Evil Village and Outlast
+      are frightening because of where you are and what you hear. Combat is the release of tension,
+      never the source of it. Build the source first.</li>
+    <li><strong>Combat cannot be tuned in a vacuum.</strong> Weapon feel, enemy spacing, how much
+      ammo is "scarce" &mdash; all of it is a function of the space you fight in. Tuning combat in a
+      grey box means re-tuning it later from scratch.</li>
+    <li><strong>It de-risks the biggest unknown earliest.</strong> The ComfyUI &rarr; Blender &rarr;
+      Unreal pipeline is the part most likely to disappoint. Finding that out in week one on a single
+      corridor is cheap; finding out in month three across a whole island is not.</li>
+    <li><strong>The noise system needs geometry.</strong> Sound occlusion &mdash; the mechanic the
+      whole game rests on &mdash; is meaningless without real walls to muffle through.</li>
+  </ul>
+
+  <div class="note">
+    <span class="lbl">The trap to avoid</span>
+    <p>"Build the world first" does <strong>not</strong> mean blocking out the whole island. It means
+    one corridor taken all the way: final materials, final lighting, final sound, running at 60fps.
+    That corridor becomes the quality bar and the performance budget for everything after it. A whole
+    island of grey boxes teaches you nothing; one finished corridor teaches you everything.</p>
+  </div>
+
+  <h2>Which tool for which job</h2>
+
+  <p>
+    The rule underneath this table: <strong>stay in Unreal unless you have a reason to leave.</strong>
+    Every round trip through another program costs time and introduces a chance to break something.
+  </p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Job</th><th>Tool</th><th>Why that one</th></tr></thead>
+      <tbody>
+        <tr><td>Concrete, rust, pipes, rubble, generic props</td><td><strong>Fab / Megascans</strong></td><td>Free, photo-scanned, Nanite-ready. Always check here first &mdash; making by hand what you can download is the most common way solo projects die</td></tr>
+        <tr><td>Blockout, level geometry, simple shapes, booleans</td><td><strong>UE5 Modeling Mode</strong></td><td>Already in the editor. No export, no round trip. Most level geometry never needs Blender</td></tr>
+        <tr><td>Scattering debris, rubble fields, decay</td><td><strong>UE5 PCG</strong></td><td>Procedural, art-directable, and re-runnable when the layout changes</td></tr>
+        <tr><td>Concept art, mood boards, "what does this room feel like"</td><td><strong>ComfyUI &middot; Chroma</strong></td><td><code>IMAGE-LAB-CHROMA-V2.json</code>. Decide the look in minutes, not days of modelling</td></tr>
+        <tr><td>Signage, posters, decals, Sh&#333;wa-era paper, stains</td><td><strong>ComfyUI &rarr; UE decals</strong></td><td>Flat art is where image generation is genuinely strongest. Enormous set-dressing value per hour</td></tr>
+        <tr><td>Unique props Fab does not have (shrine, miner gear, machinery)</td><td><strong>ComfyUI &rarr; Hunyuan3D &rarr; Blender</strong></td><td><code>prompt-to-3d-FLUX.json</code>. Background removal first, then retopologise in Blender &mdash; raw output is never game-ready</td></tr>
+        <tr><td>Creatures</td><td><strong>ComfyUI concept &rarr; Hunyuan3D base &rarr; Blender</strong></td><td>Sculpt, retopo, UV, rig, animate. You have already rigged a 16-bone character, so this path is proven</td></tr>
+        <tr><td>Humans &mdash; Kaito, your father, the Watchman</td><td><strong>MetaHuman</strong></td><td>Face and body quality you cannot hand-model in reasonable time. Installed already</td></tr>
+        <tr><td>Rigging, skinning, animation, retopology</td><td><strong>Blender</strong></td><td>The one job Unreal genuinely cannot do better</td></tr>
+        <tr><td>Gameplay, AI, systems, lighting, sound design</td><td><strong>UE5</strong></td><td>All of it. This is where the game actually is</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>The asset pipeline</h2>
+
+  <p>Every asset takes one of three routes. Prefer the top one; it is by far the cheapest.</p>
+
+  <pre>ROUTE 1 &mdash; download            <span class="dim">most environment art</span>
+   Fab / Megascans &rarr; UE5
+   <span class="dim">minutes. Nanite-ready, already photoreal.</span>
+
+ROUTE 2 &mdash; flat art             <span class="dim">signage, decals, posters, grime</span>
+   ComfyUI (Chroma) &rarr; PNG &rarr; UE5 decal / material
+   <span class="dim">~10 min per asset. Best value-per-hour in the whole pipeline.</span>
+
+ROUTE 3 &mdash; bespoke 3D          <span class="dim">creatures, hero props, anything unique</span>
+   ComfyUI concept  &rarr;  background removal  &rarr;  Hunyuan3D
+        &rarr;  <b>Blender</b>: retopo, UV, rig, animate
+        &rarr;  FBX  &rarr;  UE5
+   <span class="dim">hours to days. Only when routes 1 and 2 genuinely cannot do it.</span></pre>
+
+  <div class="note lesson">
+    <span class="lbl">Non-negotiable rule</span>
+    <p><strong>Hunyuan3D output is never game-ready.</strong> It produces dense, badly-topologised
+    meshes with no UVs and no rig. It is a <em>starting sculpt</em>, not an asset. Skipping the
+    Blender retopology step is how you end up with a 400k-triangle door handle that cannot be
+    animated. Budget the Blender time, or use route 1 instead.</p>
+  </div>
+
+  <h2>Sound</h2>
+
+  <p>
+    You named the sound design of Resident Evil Village and Outlast as what makes you dizzy. That
+    feeling is not an accident, and it is not expensive &mdash; it is the highest-impact,
+    lowest-cost work in the entire project. <strong>Sound is roughly half of horror.</strong>
+  </p>
+
+  <h3>Where it comes from</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Source</th><th>Use for</th><th>Cost</th></tr></thead>
+      <tbody>
+        <tr><td><strong>freesound.org</strong> (filter to CC0)</td><td>Sea, wind, metal groans, drips, debris, cloth</td><td>Free</td></tr>
+        <tr><td><strong>Your own phone</strong></td><td>Footsteps, doors, rummaging, breath, impacts on concrete</td><td>Free &mdash; and better than most libraries, because it is specific</td></tr>
+        <tr><td><strong>Fab audio packs</strong></td><td>Creature vocals, weapon foley, UI</td><td>Free rotations, else paid</td></tr>
+        <tr><td><strong>A voice actor</strong> (Kaito, the tapes)</td><td>The performance the story rests on</td><td>The one place worth paying money</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>What makes it dizzying &mdash; MetaSounds</h3>
+  <p>
+    MetaSounds is Unreal's procedural audio graph, and it is the difference between "a wav file
+    plays" and the effect you are describing. Four techniques carry almost all of it:
+  </p>
+
+  <ul class="plain">
+    <li><strong>Randomise everything.</strong> A drip that plays every 3.0 seconds at the same pitch
+      becomes wallpaper in ten seconds. Randomise interval, pitch and volume slightly and the brain
+      keeps treating it as real, which means it keeps paying attention.</li>
+    <li><strong>Layer ambience by depth.</strong> Sea against the seawall, wind through empty windows,
+      structural groans, water in the shafts &mdash; four independent layers, each fading by how deep
+      you are. Descending should <em>sound</em> like descending.</li>
+    <li><strong>Occlusion and reverb are the space.</strong> A sound through a concrete wall must be
+      muffled and quieter, not just quieter. Combined with Audio Volumes for reverb, this is what
+      makes a building feel solid &mdash; and it is the same data our noise system uses.</li>
+    <li><strong>Tie breath and heartbeat to fear state.</strong> Driven by proximity to a hunter, not
+      by a scripted trigger. This is the single most effective horror audio trick there is: the
+      player hears their own body betraying them before they see anything.</li>
+  </ul>
+
+  <div class="note">
+    <span class="lbl">Sound is a mechanic here, not decoration</span>
+    <p>In Seawall the noise system is gameplay: what you hear tells you where the Watchman is, and
+    what <em>you</em> emit tells him where <em>you</em> are. That means audio work is not a polish
+    task to be done at M8 &mdash; the core loop needs it at <strong>M2</strong>. Rough sounds early
+    beat perfect sounds late.</p>
+  </div>
+
+  <h2>Optimisation, from day one</h2>
+
+  <p>
+    You are right to raise this now. Unreal 5 makes it very easy to build something beautiful that
+    runs at 22fps, and the reason it is hard to fix later is that by then the cost is spread across
+    a thousand small decisions. The discipline is simple: <strong>a budget, measured continuously,
+    on the worst-case scene.</strong>
+  </p>
+
+  <h3>The budget</h3>
+  <p>
+    60fps means every frame must finish in <strong>16.6 milliseconds</strong>. Not "the game runs at
+    60" &mdash; every single frame. Here is how that divides on your 5060 Ti at 1080p:
+  </p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Thread</th><th>Budget</th><th>What lives there</th></tr></thead>
+      <tbody>
+        <tr><td>Game</td><td class="num">&lt; 6 ms</td><td>Our C++ and Blueprints, AI, physics, the noise system</td></tr>
+        <tr><td>Draw</td><td class="num">&lt; 6 ms</td><td>Preparing what to render. Driven by <strong>draw calls</strong></td></tr>
+        <tr><td>GPU</td><td class="num">&lt; 13 ms</td><td>Lumen, Nanite, shadows, post. The usual bottleneck</td></tr>
+        <tr><td>Headroom</td><td class="num">~3 ms</td><td>Deliberately unspent. Frames are spiky; a budget with no slack is already over</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>How to measure &mdash; four commands</h3>
+  <pre><b>stat unit</b>          <span class="dim">the one that matters. Frame / Game / Draw / GPU in ms.</span>
+                   <span class="dim">Whichever is closest to Frame is your bottleneck. Fix THAT.</span>
+<b>stat gpu</b>           <span class="dim">GPU time broken down by pass -- shows if Lumen or shadows are the cost</span>
+<b>stat scenerendering</b> <span class="dim">draw call count. Over ~3000 and the Draw thread is your problem</span>
+<b>ProfileGPU</b>         <span class="dim">(Ctrl+Shift+,) one frame, every pass, sorted by cost</span></pre>
+
+  <div class="note lesson">
+    <span class="lbl">The rule that prevents most of the pain</span>
+    <p><strong>Measure before optimising, always.</strong> The overwhelmingly common mistake is
+    spending a week reducing triangle counts when the bottleneck was the Game thread the whole time.
+    <code>stat unit</code> tells you which of the four numbers to care about. Optimising anything
+    else is wasted work &mdash; and it is wasted work that also makes the game worse.</p>
+  </div>
+
+  <h3>The traps, specific to this game</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Trap</th><th>Why it bites a horror game</th><th>Discipline</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Shadow-casting lights</strong></td><td>Dark game &rarr; many small lights. Each shadow caster is a full extra render pass</td><td>Very few cast shadows. Your torch does; most emergency lights do not</td></tr>
+        <tr><td><strong>Volumetric fog</strong></td><td>Irresistible for atmosphere, and one of the most expensive things you can enable</td><td>Use it, but measure it. Keep the volume small and the resolution modest</td></tr>
+        <tr><td><strong>Translucent overdraw</strong></td><td>Dust motes, smoke, water sheets, glass &mdash; stacked translucency multiplies pixel cost</td><td>Watch it whenever particles fill the screen. This is the classic silent killer</td></tr>
+        <tr><td><strong>Tick on everything</strong></td><td>Hundreds of actors ticking every frame for something that changes once a second</td><td>Default to tick <em>disabled</em>. Use timers and events. This is a Game-thread killer</td></tr>
+        <tr><td><strong>Nanite on the wrong things</strong></td><td>Brilliant for solid geometry, bad for foliage-like or masked materials</td><td>Nanite for concrete and rubble; conventional LODs for anything with opacity masks</td></tr>
+        <tr><td><strong>Lumen quality left on default</strong></td><td>Enormous quality range and enormous cost range</td><td>Tune final-gather and reflection quality once, on the corridor, and lock it</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>The discipline</h3>
+  <ul class="plain">
+    <li><strong>A perf test map, from M1.</strong> One level that represents worst case &mdash; the
+      most lights, the most geometry, the most particles the game will ever show at once. Every
+      milestone gets measured there.</li>
+    <li><strong>Check <code>stat unit</code> at the end of every session.</strong> Thirty seconds.
+      Catching a 2ms regression the day it appears is trivial; finding it three weeks later inside a
+      hundred changes is not.</li>
+    <li><strong>Write the number in the journal.</strong> A performance graph over the project's life
+      is the single most useful artefact for knowing whether you are drifting.</li>
+    <li><strong>The engine ships <code>AutomatedPerfTestTools</code></strong> &mdash; already present
+      in 5.8. Once the corridor exists we wire it up so performance is checked automatically rather
+      than by remembering to.</li>
+  </ul>
+
+  <h2>Running the machine</h2>
+
+  <p>
+    32 GB of RAM and 16 GB of VRAM is a good workstation, but it is not enough to run everything at
+    once. This is the practical constraint that shapes your working day.
+  </p>
+
+  <div class="note">
+    <span class="lbl">Hard rule</span>
+    <p><strong>Never run ComfyUI and Unreal at the same time.</strong> Chroma alone holds ~8.5 GB of
+    VRAM; Unreal with Lumen and Nanite wants most of the rest. Running both means both are slow and
+    something eventually falls over mid-bake.</p>
+  </div>
+
+  <p>Which leads to a simple weekly shape &mdash; <strong>batch the tool switches, do not interleave them</strong>:</p>
+
+  <div class="acts">
+    <div class="act">
+      <span class="n">Mode A</span>
+      <h4>Asset days &mdash; ComfyUI + Blender</h4>
+      <p>Unreal closed. Generate concepts in batches, run Hunyuan3D, retopologise and rig in Blender.
+      Produce a folder of finished FBX and PNG files. Batching matters because Chroma takes minutes
+      per image &mdash; queue ten and walk away rather than watching one.</p>
+    </div>
+    <div class="act">
+      <span class="n">Mode B</span>
+      <h4>Build days &mdash; Unreal only</h4>
+      <p>ComfyUI closed. Import what Mode A produced, write C++, light, tune, playtest. This is where
+      most days go, and where the game actually gets made.</p>
+    </div>
+    <div class="act">
+      <span class="n">Mode C</span>
+      <h4>Sound sessions &mdash; anywhere</h4>
+      <p>Recording foley on a phone and building MetaSound graphs is light on the machine and can
+      fill the gaps. Genuinely the best return per hour in the project, and the most neglected.</p>
+    </div>
+  </div>
+
+  <h2>So, concretely, next</h2>
+
+  <ul class="check">
+    <li class="y">You: open the 5 migrated projects in 5.8 and confirm they look right</li>
+    <li class="y">You: restart Claude Code so both MCP servers load</li>
+    <li class="o">Grab the free Fab packs: Derelict Corridor (262 assets) + Dark Ruins</li>
+    <li class="o">Block out one corridor in UE5 Modeling Mode &mdash; no external tools</li>
+    <li class="o">First-person character in C++: walk, crouch, lean, torch</li>
+    <li class="o">Light it with Lumen. Establish the look</li>
+    <li class="o">First MetaSound ambience: sea, wind, drips, structural groan</li>
+    <li class="o">Measure <code>stat unit</code>. Write the number down. That is the baseline everything else is judged against</li>
+  </ul>
+
+  <p>
+    That is M1 &mdash; a corridor you are afraid to walk down. It is small on purpose. When it is
+    finished it will have proved the art pipeline, the lighting look, the audio approach and the
+    performance budget all at once, and everything after it becomes repetition rather than
+    invention.
+  </p>
+
+  <div class="foot">
+    <span>SEAWALL &middot; workstation &amp; pipeline</span>
+    <span>Session 01 &middot; 5 Sep 2026</span>
+  </div>
+
+</div>
