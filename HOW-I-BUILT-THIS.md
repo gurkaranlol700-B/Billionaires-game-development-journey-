@@ -313,9 +313,56 @@ the only thing left on C: is the engine itself.
 - [x] Clear the stuck Epic install record
 - [x] Uninstall UE 5.7 (reclaimed 26.6 GB)
 - [x] Redirect DDC to `D:\UnrealDDC\Local`
-- [ ] UE 5.8.2 finishing its install (31.7 GB → `C:\Program Files\Epic Games\UE_5.8`)
-- [ ] Re-run the `ToolchainTest` smoke test against 5.8
+- [x] UE 5.8.2 installed — C: settled at 11 GB free, almost exactly as projected
+- [x] `ToolchainTest` re-verified against 5.8 — succeeded in 77 s
+- [x] All 5 projects bumped to `"EngineAssociation": "5.8"`
+- [x] Journal published to GitHub, auto-deploying on Vercel
 - [ ] Verify all 5 migrated projects open and run in 5.8 **(your job — you know what they should look like)**
 - [ ] Delete the C: project originals → reclaims another 7.9 GB
+- [ ] Enable the Unreal MCP plugins, generate the Claude Code config
 - [ ] Create the Seawall project, wire both MCPs
 - [ ] **M1: a corridor you're afraid to walk down**
+
+---
+
+### 5.8 accepts the newer compiler after all
+
+Re-running the smoke test against 5.8 picked **14.50** with no warning at all:
+
+```
+Using Visual Studio 14.50.35725 toolchain and Windows 10.0.26100.0 SDK.
+Result: Succeeded          Total execution time: 76.98 seconds
+```
+
+Because 5.8's `Windows_SDK.json` widened the preferred range:
+
+```json
+"PreferredVisualCppVersions": [
+    "14.50.35717-14.50.99999",     // <-- now first choice
+    "14.44.35207-14.44.99999"
+]
+```
+
+So the original compiler was always fine on 5.8, and installing 14.44 turned out to be
+unnecessary — harmless, and now a fallback. **The .NET Framework SDK fix was the one that
+mattered**, and it would have blocked any engine version. Worth separating "a warning" from
+"a blocker" before spending effort on either.
+
+### Publishing the journal
+
+The journal is a single `index.html` at the repo root — no build step, no dependencies beyond
+Google Fonts — so Vercel serves it directly with the **Other** preset and empty build settings:
+
+```
+git push  ->  GitHub  ->  Vercel auto-deploy  ->  live in ~30s
+```
+
+Live at <https://billionaires-game-development-journ.vercel.app/>. Every session appends here
+and pushes; the site updates itself.
+
+### One constraint to decide before M4
+
+Git LFS on a free GitHub account allows **1 GB storage and 1 GB bandwidth/month**. Nothing binary
+is committed yet, so it costs nothing today — but Unreal assets will pass that quickly once the
+island gets built. The choice: pay for LFS data packs, or keep `Content/` out of GitHub and back
+it up to the existing `G:\` mirror instead.

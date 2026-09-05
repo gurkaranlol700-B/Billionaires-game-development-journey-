@@ -3,7 +3,7 @@
 Build journal and source for **SEAWALL**, a first-person survival horror game
 built in Unreal Engine 5.8.
 
-**Read the journal:** open `index.html`, or the deployed site.
+**Read the journal:** <https://billionaires-game-development-journ.vercel.app/>
 
 ## Setting
 
@@ -17,7 +17,7 @@ Your friend Kaito is going to trade you for his sister.
 
 | Path | What it is |
 |---|---|
-| `index.html` | The build journal (also `Docs/build-log.html`) |
+| `index.html` | The build journal — single file, no build step |
 | `HOW-I-BUILT-THIS.md` | Same journal in markdown, with extra command-level detail |
 | `Tools/seawall-mcp/` | MCP server — build, log tailing, tests, screenshots |
 | `Source/` | C++ game code (arriving at M1) |

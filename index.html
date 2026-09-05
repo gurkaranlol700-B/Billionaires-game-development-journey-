@@ -411,10 +411,10 @@ ul.plain li { margin-bottom: 7px; max-width: 66ch; }
     </p>
 
     <div class="board">
-      <div class="cell"><span class="k">Engine</span><span class="v">UE 5.8.2</span></div>
+      <div class="cell"><span class="k">Engine</span><span class="v ok">UE 5.8.2</span></div>
       <div class="cell"><span class="k">Toolchain</span><span class="v ok">Verified</span></div>
       <div class="cell"><span class="k">Projects</span><span class="v ok">5 / 5 safe</span></div>
-      <div class="cell"><span class="k">Milestone</span><span class="v warn">M0 setup</span></div>
+      <div class="cell"><span class="k">Next</span><span class="v warn">M1</span></div>
     </div>
   </header>
 
@@ -743,6 +743,70 @@ LogAutoUpdateService: The installation failed ... the installer will no longer t
       </div>
     </div>
 
+    <!-- 08 -->
+    <div class="entry">
+      <div class="seq">08</div>
+      <div>
+        <div class="entry-head"><h3>5.8 lands, and a small vindication</h3><span class="tag done">Done</span></div>
+        <p>
+          UE 5.8.2 finished installing. C: settled at 11 GB free &mdash; almost exactly the ~10 GB
+          predicted. Epic's MCP stack is all present:
+        </p>
+        <pre class="good">Experimental/<span class="hl-good">ModelContextProtocol</span>/ModelContextProtocol.uplugin
+Experimental/<span class="hl-good">ToolsetRegistry</span>/ToolsetRegistry.uplugin
+Experimental/Toolsets/<span class="hl-good">AllToolsets</span>/AllToolsets.uplugin</pre>
+        <p>
+          There are around 30 individual toolsets the editor MCP can drive &mdash; including
+          <code>GASToolsets</code>, <code>StateTreeToolset</code>, <code>NiagaraToolsets</code>,
+          <code>UMGToolSet</code>, <code>AutomationTestToolset</code>, <code>LiveCodingToolset</code>
+          and <code>MetaHumanGenerator</code>. Nearly everything Seawall needs is directly drivable.
+        </p>
+        <p>Re-ran the six-file smoke test against the new engine:</p>
+        <pre class="good">Using Visual Studio <b>14.50.35725</b> toolchain and Windows 10.0.26100.0 SDK.
+
+[4/7] Compile [x64] ToolchainTest.cpp
+[6/7] Link    [x64] UnrealEditor-ToolchainTest.dll
+
+Result: <span class="hl-good">Succeeded</span>          Total execution time: 76.98 seconds</pre>
+        <p>
+          Note what it picked: <strong>14.50</strong>, with <em>no</em> "not preferred" warning. 5.8
+          widened its accepted range:
+        </p>
+        <pre>"PreferredVisualCppVersions": [
+    <b>"14.50.35717-14.50.99999"</b>,      <span class="dim">&lt;-- now first choice</span>
+    "14.44.35207-14.44.99999"
+]</pre>
+        <div class="note lesson">
+          <span class="lbl">Worth knowing</span>
+          <p>The original compiler was always going to be fine on 5.8 &mdash; that warning was purely
+          a 5.7 artifact, and installing 14.44 turned out to be unnecessary (harmless, and now a
+          fallback). <strong>The .NET Framework SDK fix was the one that actually mattered</strong>,
+          and it would have blocked us on any engine version. Worth separating "a warning" from
+          "a blocker" before spending effort on either.</p>
+        </div>
+        <p>All five migrated projects then bumped to <code>"EngineAssociation": "5.8"</code>.</p>
+      </div>
+    </div>
+
+    <!-- 09 -->
+    <div class="entry">
+      <div class="seq">09</div>
+      <div>
+        <div class="entry-head"><h3>This journal, on the internet</h3><span class="tag done">Live</span></div>
+        <p>
+          The journal now publishes itself. It lives in the repo as <code>index.html</code> &mdash; a
+          single file, no build step, no dependencies beyond Google Fonts &mdash; so Vercel serves it
+          straight from the repository root with the <strong>Other</strong> preset and empty build
+          settings.
+        </p>
+        <pre class="good">git push  &rarr;  GitHub  &rarr;  Vercel auto-deploy  &rarr;  live in ~30s</pre>
+        <p>
+          Every future session appends here and pushes; the site updates itself. Readable from a
+          phone, anywhere, without needing the machine that's building the game.
+        </p>
+      </div>
+    </div>
+
   </div>
 
   <h2>Where things stand</h2>
@@ -756,13 +820,25 @@ LogAutoUpdateService: The installation failed ... the installer will no longer t
     <li class="d">Stuck Epic install record cleared</li>
     <li class="d">UE 5.7 uninstalled &mdash; reclaimed 26.6 GB</li>
     <li class="d">DDC redirected to <code>D:\UnrealDDC\Local</code></li>
-    <li class="r">UE 5.8.2 installing (31.7 GB)</li>
-    <li class="o">Re-run <code>ToolchainTest</code> against 5.8</li>
+    <li class="d">UE 5.8.2 installed &mdash; C: settled at 11 GB free, as projected</li>
+    <li class="d"><code>ToolchainTest</code> re-verified against 5.8 &mdash; succeeded in 77s</li>
+    <li class="d">All 5 projects bumped to <code>EngineAssociation 5.8</code></li>
+    <li class="d">Journal published to GitHub and auto-deploying on Vercel</li>
     <li class="y">Verify all 5 migrated projects open in 5.8 &mdash; <strong>your job</strong>, you know what they should look like</li>
     <li class="o">Delete the C: originals &mdash; another 7.9 GB</li>
+    <li class="o">Enable the Unreal MCP plugins; generate the Claude Code config</li>
     <li class="o">Create the Seawall project; wire both MCP servers</li>
     <li class="o"><strong>M1 &mdash; a corridor you're afraid to walk down</strong></li>
   </ul>
+
+  <div class="note">
+    <span class="lbl">Known constraint</span>
+    <p>Git LFS on a free GitHub account allows <strong>1 GB of storage and 1 GB of bandwidth per
+    month.</strong> Nothing binary has been committed yet, so this costs nothing today &mdash; but
+    Unreal assets will pass that quickly once M4 starts building the island. The decision to make
+    before then: pay for LFS data packs, or keep <code>Content/</code> out of GitHub and back it up
+    to the existing <code>G:\</code> mirror instead.</p>
+  </div>
 
   <h2>The road from here</h2>
 
