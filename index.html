@@ -1,0 +1,807 @@
+<title>Seawall Build Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+/* ==========================================================================
+   SEAWALL BUILD LOG
+   Dark-first: bare :root carries the complete dark palette, light overrides
+   under prefers-color-scheme:light and [data-theme="light"].
+   Palette is Gunkanjima -- wet concrete, sea dark, oxide rust on rebar.
+   ========================================================================== */
+
+:root {
+  /* grounds */
+  --g-0:  #0B0F11;   /* page ground -- sea-dark, blue-green cast */
+  --g-1:  #12181B;   /* raised surface */
+  --g-2:  #1A2226;   /* card */
+  --g-3:  #232D32;   /* inset / code */
+  --line: #2C383E;
+  --line-soft: #202A2F;
+
+  /* text */
+  --tx-1: #E4E9EA;   /* primary */
+  --tx-2: #A3B0B4;   /* secondary */
+  --tx-3: #6E7F85;   /* tertiary / labels */
+
+  /* accent + semantic */
+  --oxide:     #C05F32;   /* THE accent -- rust bleeding through concrete */
+  --oxide-dim: #8E4626;
+  --oxide-wash:#2A1912;
+  --verdigris: #5A9B85;   /* done */
+  --verdigris-wash:#132420;
+  --sodium:    #D9A441;   /* in progress / pending */
+  --sodium-wash:#241C0E;
+  --blood:     #C4483F;   /* blocked / failed */
+  --blood-wash:#26120F;
+
+  --shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 24px -12px rgba(0,0,0,.7);
+
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --g-0:  #E7E9E7;
+    --g-1:  #F1F2F0;
+    --g-2:  #FAFAF9;
+    --g-3:  #E4E7E5;
+    --line: #C9CFCC;
+    --line-soft: #DBE0DD;
+    --tx-1: #131A1C;
+    --tx-2: #4A585C;
+    --tx-3: #6E7F85;
+    --oxide:     #9C4520;
+    --oxide-dim: #C05F32;
+    --oxide-wash:#F6E7DF;
+    --verdigris: #2F6B57;
+    --verdigris-wash:#E0EDE8;
+    --sodium:    #8A6212;
+    --sodium-wash:#F5EBD6;
+    --blood:     #A32E26;
+    --blood-wash:#F7E2E0;
+    --shadow: 0 1px 2px rgba(19,26,28,.06), 0 8px 24px -14px rgba(19,26,28,.22);
+  }
+}
+
+:root[data-theme="light"] {
+  --g-0:  #E7E9E7;
+  --g-1:  #F1F2F0;
+  --g-2:  #FAFAF9;
+  --g-3:  #E4E7E5;
+  --line: #C9CFCC;
+  --line-soft: #DBE0DD;
+  --tx-1: #131A1C;
+  --tx-2: #4A585C;
+  --tx-3: #6E7F85;
+  --oxide:     #9C4520;
+  --oxide-dim: #C05F32;
+  --oxide-wash:#F6E7DF;
+  --verdigris: #2F6B57;
+  --verdigris-wash:#E0EDE8;
+  --sodium:    #8A6212;
+  --sodium-wash:#F5EBD6;
+  --blood:     #A32E26;
+  --blood-wash:#F7E2E0;
+  --shadow: 0 1px 2px rgba(19,26,28,.06), 0 8px 24px -14px rgba(19,26,28,.22);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--g-0);
+  color: var(--tx-1);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: 900px; margin: 0 auto; padding: 0 24px 96px; }
+
+/* ---------- masthead ---------- */
+
+.mast {
+  border-bottom: 1px solid var(--line);
+  padding: 56px 0 28px;
+  margin-bottom: 40px;
+}
+.eyebrow {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--oxide);
+  margin: 0 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.eyebrow::before {
+  content: "";
+  width: 28px; height: 2px;
+  background: var(--oxide);
+  flex: none;
+}
+h1 {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(2.6rem, 9vw, 4.6rem);
+  line-height: .94;
+  letter-spacing: -.035em;
+  margin: 0 0 16px;
+  text-wrap: balance;
+}
+.dek {
+  font-size: 1.06rem;
+  color: var(--tx-2);
+  max-width: 62ch;
+  margin: 0;
+}
+.dek strong { color: var(--tx-1); font-weight: 600; }
+
+/* ---------- status board ---------- */
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  background: var(--line-soft);
+  border: 1px solid var(--line-soft);
+  margin: 32px 0 0;
+}
+.cell { background: var(--g-1); padding: 14px 16px; }
+.cell .k {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  display: block;
+  margin-bottom: 6px;
+}
+.cell .v {
+  font-family: var(--f-display);
+  font-size: 1.22rem;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums;
+}
+.cell .v.ok   { color: var(--verdigris); }
+.cell .v.warn { color: var(--sodium); }
+
+/* ---------- section headings ---------- */
+
+h2 {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 1.6rem;
+  letter-spacing: -.02em;
+  margin: 64px 0 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  text-wrap: balance;
+}
+h3 {
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: 1.06rem;
+  letter-spacing: -.005em;
+  margin: 28px 0 10px;
+}
+p { margin: 0 0 14px; max-width: 68ch; }
+a { color: var(--oxide); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--oxide);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ---------- log entries ---------- */
+
+.log { display: flex; flex-direction: column; gap: 0; }
+
+.entry {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: 0 22px;
+  padding: 30px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.entry:last-child { border-bottom: none; }
+
+.seq {
+  font-family: var(--f-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx-3);
+  padding-top: 4px;
+  position: relative;
+}
+.seq::after {
+  content: "";
+  position: absolute;
+  left: 0; top: 30px; bottom: -34px;
+  width: 1px;
+  background: var(--line-soft);
+}
+.entry:last-child .seq::after { display: none; }
+
+.entry-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.entry-head h3 { margin: 0; font-size: 1.16rem; }
+
+.tag {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.tag.done    { color: var(--verdigris); border-color: var(--verdigris); background: var(--verdigris-wash); }
+.tag.running { color: var(--sodium);    border-color: var(--sodium);    background: var(--sodium-wash); }
+.tag.fixed   { color: var(--oxide);     border-color: var(--oxide);     background: var(--oxide-wash); }
+.tag.you     { color: var(--tx-2);      border-color: var(--line);      background: var(--g-2); }
+
+/* ---------- evidence blocks ---------- */
+
+pre {
+  font-family: var(--f-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  background: var(--g-3);
+  border: 1px solid var(--line-soft);
+  border-left: 2px solid var(--tx-3);
+  padding: 13px 15px;
+  margin: 14px 0;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--tx-2);
+}
+pre.bad  { border-left-color: var(--blood); }
+pre.good { border-left-color: var(--verdigris); }
+pre b { color: var(--tx-1); font-weight: 600; }
+pre .hl-bad  { color: var(--blood); font-weight: 600; }
+pre .hl-good { color: var(--verdigris); font-weight: 600; }
+pre .dim { color: var(--tx-3); }
+
+code {
+  font-family: var(--f-mono);
+  font-size: .88em;
+  background: var(--g-3);
+  border: 1px solid var(--line-soft);
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+pre code { background: none; border: none; padding: 0; white-space: pre; }
+
+/* ---------- tables ---------- */
+
+.tw { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line-soft); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 460px; }
+th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line-soft); }
+th {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  font-weight: 500;
+  background: var(--g-1);
+}
+tbody tr:last-child td { border-bottom: none; }
+td.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.ok  { color: var(--verdigris); font-family: var(--f-mono); font-size: 12px; font-weight: 600; }
+
+/* ---------- callout ---------- */
+
+.note {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--oxide);
+  background: var(--g-1);
+  padding: 15px 18px;
+  margin: 18px 0;
+}
+.note .lbl {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--oxide);
+  display: block;
+  margin-bottom: 7px;
+}
+.note p:last-child { margin-bottom: 0; }
+.note.lesson { border-left-color: var(--verdigris); }
+.note.lesson .lbl { color: var(--verdigris); }
+
+/* ---------- story block ---------- */
+
+.acts { display: grid; gap: 1px; background: var(--line-soft); border: 1px solid var(--line-soft); margin: 18px 0; }
+.act { background: var(--g-1); padding: 16px 18px; }
+.act .n {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--oxide);
+  display: block;
+  margin-bottom: 6px;
+}
+.act h4 { font-family: var(--f-display); font-size: 1.02rem; font-weight: 700; margin: 0 0 6px; letter-spacing: -.01em; }
+.act p { margin: 0; font-size: .94rem; color: var(--tx-2); max-width: none; }
+
+/* ---------- checklist ---------- */
+
+ul.check { list-style: none; padding: 0; margin: 16px 0; display: flex; flex-direction: column; gap: 2px; }
+ul.check li {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  align-items: baseline;
+  padding: 7px 10px;
+  background: var(--g-1);
+  border-left: 2px solid var(--line);
+  font-size: .95rem;
+}
+ul.check li::before { font-family: var(--f-mono); font-size: 12px; font-weight: 600; }
+ul.check li.d { border-left-color: var(--verdigris); color: var(--tx-2); }
+ul.check li.d::before { content: "[x]"; color: var(--verdigris); }
+ul.check li.r { border-left-color: var(--sodium); }
+ul.check li.r::before { content: "[~]"; color: var(--sodium); }
+ul.check li.o::before { content: "[ ]"; color: var(--tx-3); }
+ul.check li.y { border-left-color: var(--oxide); }
+ul.check li.y::before { content: "[!]"; color: var(--oxide); }
+
+ul.plain { margin: 12px 0; padding-left: 20px; }
+ul.plain li { margin-bottom: 7px; max-width: 66ch; }
+
+/* ---------- footer ---------- */
+
+.foot {
+  margin-top: 72px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  color: var(--tx-3);
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 620px) {
+  .entry { grid-template-columns: 1fr; gap: 0; }
+  .seq { padding-top: 0; margin-bottom: 8px; }
+  .seq::after { display: none; }
+  .wrap { padding: 0 18px 64px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div class="wrap">
+
+  <header class="mast">
+    <p class="eyebrow">Build Log &middot; Session 01 &middot; 5 Sep 2026</p>
+    <h1>SEAWALL</h1>
+    <p class="dek">
+      A first-person survival horror game set on <strong>Kurogane-jima</strong>, a fictional
+      abandoned concrete mining island off Nagasaki. Four to five hours, scarce combat,
+      built in Unreal Engine 5.8. This is the working record &mdash; every decision, every
+      thing that broke, and how it got fixed.
+    </p>
+
+    <div class="board">
+      <div class="cell"><span class="k">Engine</span><span class="v">UE 5.8.2</span></div>
+      <div class="cell"><span class="k">Toolchain</span><span class="v ok">Verified</span></div>
+      <div class="cell"><span class="k">Projects</span><span class="v ok">5 / 5 safe</span></div>
+      <div class="cell"><span class="k">Milestone</span><span class="v warn">M0 setup</span></div>
+    </div>
+  </header>
+
+  <h2>What we're making</h2>
+
+  <p>
+    Your father, a marine surveyor, vanished on Kurogane-jima four months ago. The search
+    was called off. You and <strong>Kaito</strong> &mdash; his student, your closest friend,
+    the last person to see him &mdash; hire a boat and land on the island at dusk.
+  </p>
+
+  <div class="acts">
+    <div class="act">
+      <span class="n">Act I</span>
+      <h4>Escape</h4>
+      <p>The boat is gone within the hour. You find Kaito pinned in a collapsed stairwell and
+      get him out &mdash; it costs you. Every route off the island fails: the pier is gone, the
+      radio needs power, the power needs the pump house, the pump house is flooded. This act
+      teaches the horror loop by making escape the only thing you want and denying it four times.</p>
+    </div>
+    <div class="act">
+      <span class="n">Act II</span>
+      <h4>Save someone</h4>
+      <p>Your father's recorder turns up in the flooded pump house. He's alive, and he's
+      <em>down</em> &mdash; in the shafts under the seabed. Your goal inverts: stop trying to get
+      out, start going deeper. Kaito comes with you. He tells you about his sister.</p>
+    </div>
+    <div class="act">
+      <span class="n">Act III</span>
+      <h4>The truth</h4>
+      <p>Your father isn't a prisoner. He's the one who's been feeding it. The island gives
+      things back, and it charges for them. Kaito's sister has been dead for two years. She has
+      been answering his phone for one. He was always going to trade you &mdash; and he saved you
+      in Act II so you'd be worth something in Act III.</p>
+    </div>
+  </div>
+
+  <h3>Decisions locked</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Decision</th><th>Choice</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Perspective</td><td>First person</td><td>3&ndash;5&times; less animation work; the monster is only where you look</td></tr>
+        <tr><td>Setting</td><td>Kurogane-jima</td><td>No horror game has used Gunkanjima; free Megascans concrete fits exactly</td></tr>
+        <tr><td>Combat</td><td>Scarce, RE Village style</td><td>Only option that supports real boss fights</td></tr>
+        <tr><td>Betrayal</td><td>Understandable (TLOU register)</td><td>You'd have done the same &mdash; that's what makes it sit in your chest</td></tr>
+        <tr><td>Code</td><td>C++ core, Blueprint content</td><td>Text files I can author; replication-safe for co-op later</td></tr>
+        <tr><td>Length</td><td>4&ndash;5 hours</td><td>Scope cap. Everything else is a parked list, not a build item</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <span class="lbl">Deliberate change</span>
+    <p>The real Hashima Island was a site of <strong>Korean and Chinese forced labour during
+    WWII</strong>, and people died there. Building a monster shooter on a real atrocity is both
+    tasteless and a genuine product risk. So the island is fictional: Kurogane-jima
+    (&#40658;&#37444;&#23798;, "Black Iron Island") is visually Gunkanjima &mdash; same brutalist
+    concrete city in the sea, same seawall, same shafts under the seabed &mdash; but it's ours,
+    and we can invent whatever history the story needs.</p>
+  </div>
+
+  <h2>Session 01 &mdash; laying the ground</h2>
+
+  <div class="log">
+
+    <!-- 01 -->
+    <div class="entry">
+      <div class="seq">01</div>
+      <div>
+        <div class="entry-head"><h3>The hardware audit</h3><span class="tag done">Done</span></div>
+        <p>Before promising anything, we established what the machine can actually do.</p>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Part</th><th>Spec</th><th>Verdict</th></tr></thead>
+            <tbody>
+              <tr><td>GPU</td><td class="num">RTX 5060 Ti 16GB</td><td>Lumen + Nanite + hardware RT + DLSS 4. Comfortable at 1080p60.</td></tr>
+              <tr><td>CPU</td><td class="num">i5-14400F &middot; 10C / 16T</td><td>Shader compiles are CPU-bound. Fine, not fast.</td></tr>
+              <tr><td>RAM</td><td class="num">32 GB</td><td><strong>The weak link.</strong> UE5 prefers 48&ndash;64. Close ComfyUI before opening Unreal.</td></tr>
+              <tr><td>Disk</td><td class="num">2TB NVMe (C/D/F/G)</td><td>All one physical drive &mdash; so D: costs zero speed versus C:.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          The disk situation was the first real problem: <strong>C: had 18 GB free.</strong> Unreal
+          generates enormous derived data &mdash; shader caches, cooked content, intermediates &mdash;
+          and would have filled that within a week. Everything Unreal now lives on D:, which had 358 GB.
+        </p>
+      </div>
+    </div>
+
+    <!-- 02 -->
+    <div class="entry">
+      <div class="seq">02</div>
+      <div>
+        <div class="entry-head"><h3>Migrating five projects off C:</h3><span class="tag done">Done</span></div>
+        <p>
+          Five existing projects sat in <code>Documents\Unreal Projects</code>. The key discovery:
+          <strong>only 1.14 GB of their 7.81 GB was real.</strong> This is true of every Unreal
+          project you will ever make.
+        </p>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Folder</th><th>Keep</th><th>What it is</th></tr></thead>
+            <tbody>
+              <tr><td><code>Content/</code></td><td class="ok">YES</td><td>Your actual assets &mdash; meshes, materials, Blueprints, levels</td></tr>
+              <tr><td><code>Config/</code></td><td class="ok">YES</td><td>Project settings (<code>.ini</code>)</td></tr>
+              <tr><td><code>Source/</code></td><td class="ok">YES</td><td>C++ code, if the project has any</td></tr>
+              <tr><td><code>Binaries/</code></td><td>no</td><td>Compiled output &mdash; rebuilt on demand</td></tr>
+              <tr><td><code>Intermediate/</code></td><td>no</td><td>Build scratch space</td></tr>
+              <tr><td><code>DerivedDataCache/</code></td><td>no</td><td>Cached shaders and textures</td></tr>
+              <tr><td><code>Saved/</code></td><td>check</td><td>Logs and autosaves &mdash; but <code>SaveGames</code> and <code>Screenshots</code> <em>are</em> yours</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>We checked <code>SaveGames</code> and <code>Screenshots</code> on all five: empty. Then copied and verified by file count <em>and</em> byte size:</p>
+        <pre class="good"><span class="dim">PROJECT                  SRC_FILES DST_FILES    SRC_MB    DST_MB  STATUS</span>
+car_game_5hrs                  526       526       607       607  <span class="hl-good">SAFE</span>
+landscape_1                    274       274       242       242  <span class="hl-good">SAFE</span>
+masterclass_game               265       265       137       137  <span class="hl-good">SAFE</span>
+my_first_unreal_game           776       776       146       146  <span class="hl-good">SAFE</span>
+real_npc_car_ai                217       217        50        50  <span class="hl-good">SAFE</span>
+
+<span class="hl-good">&gt;&gt;&gt; ALL 5 PROJECTS VERIFIED SAFE ON D:</span></pre>
+        <div class="note">
+          <span class="lbl">Why copy, never move</span>
+          <p>Upgrading a Blueprint project from 5.7 to 5.8 is a <strong>one-way conversion.</strong>
+          If it breaks, you want the original still sitting there. All five are Blueprint-only
+          (no <code>Source/</code>), which makes this about as low-risk as Unreal upgrades get &mdash;
+          no code to recompile, just asset format conversion.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 03 -->
+    <div class="entry">
+      <div class="seq">03</div>
+      <div>
+        <div class="entry-head"><h3>The toolchain fight</h3><span class="tag fixed">Fixed</span></div>
+        <p>
+          Unreal C++ does not compile just because "Visual Studio is installed." We tested this on
+          <strong>day one with a six-file throwaway project</strong>, on purpose, rather than
+          discovering it in week three with real work in flight. It failed:
+        </p>
+        <pre class="bad">Available x64 toolchains (1):
+ * ...\VC\Tools\MSVC\14.50.35717
+
+<span class="dim">Visual Studio 2026 compiler version 14.50.35725 is not a preferred version.</span>
+<span class="hl-bad">Unable to instantiate module 'SwarmInterface': Could not find NetFxSDK install dir</span>
+
+Result: <span class="hl-bad">Failed (RulesError)</span></pre>
+        <p>
+          Two separate things. The compiler-version line is <em>a warning</em> &mdash; harmless.
+          The blocker was that the machine had a C++ compiler but <strong>no .NET Framework SDK at
+          all</strong>. Until fixed, <em>no</em> Unreal C++ project could build here.
+        </p>
+        <p>Unreal writes its exact requirements in a readable file &mdash; worth knowing this exists:</p>
+        <pre>&lt;Engine&gt;\Engine\Config\Windows\Windows_SDK.json
+
+  <b>"MinimumVisualCppVersion"</b>:  "14.38.33130"
+  <b>"BannedVisualCppVersions"</b>:  [ "14.44.0-14.44.35210", "14.40.0-14.43.99999", ... ]
+  <b>"PreferredVisualCppVersions"</b>: [ "14.44.35207-14.44.99999" ]</pre>
+        <p>
+          It even lists <em>banned</em> compiler versions with known codegen bugs. Ours was above
+          minimum and not banned &mdash; just not preferred.
+        </p>
+        <h3>The subtle bit that cost a round trip</h3>
+        <p>
+          ".NET Framework <strong>targeting pack</strong>" and ".NET Framework <strong>SDK</strong>"
+          are different components. Installing the targeting pack put files in
+          <code>Reference Assemblies\</code> &mdash; but Unreal doesn't look there. Reading
+          UnrealBuildTool's own C# source settled it:
+        </p>
+        <pre>// MicrosoftPlatformSDK.cs
+string[] PreferredVersions = new string[] { "4.6.2", "4.6.1", "4.6" };
+string NetFxSDKKeyName = "Microsoft\\Microsoft SDKs\\NETFXSDK";
+TryReadInstallDirRegistryKey32(NetFxSDKKeyName + "\\" + PreferredVersion,
+                               <b>"KitsInstallationFolder"</b>, out OutInstallDir)</pre>
+        <p>
+          It reads a <strong>registry key</strong>, which only the SDK component creates. Fix:
+          <code>Microsoft.Net.Component.4.6.2.SDK</code> &mdash; <code>.SDK</code>, not
+          <code>.TargetingPack</code>. We added MSVC 14.44 at the same time to get onto the
+          toolchain Epic actually tests. Result:
+        </p>
+        <pre class="good">Using Visual Studio 2026 <span class="hl-good">14.44.35223</span> toolchain and Windows 10.0.26100.0 SDK.
+
+[3/7] Compile [x64] ToolchainTest.cpp
+[6/7] Link    [x64] UnrealEditor-ToolchainTest.dll
+
+Result: <span class="hl-good">Succeeded</span>          Total execution time: 66.90 seconds</pre>
+        <p>Note it picked 14.44 by itself and the "not preferred" warning is gone.</p>
+        <div class="note lesson">
+          <span class="lbl">Lesson</span>
+          <p>When a build tool says it can't find something, find out where the tool <em>looks</em>.
+          Unreal ships UnrealBuildTool's full C# source under
+          <code>Engine\Source\Programs\UnrealBuildTool</code> &mdash; you can always just read it
+          instead of guessing.</p>
+        </div>
+        <div class="note">
+          <span class="lbl">Keep this</span>
+          <p><code>D:\UnrealProjects\ToolchainTest</code> is six files that compile in ~60 seconds,
+          which makes it the fastest possible answer to "is the engine/compiler setup healthy?"
+          It gets re-run against every new engine version.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 04 -->
+    <div class="entry">
+      <div class="seq">04</div>
+      <div>
+        <div class="entry-head"><h3>Two MCP servers</h3><span class="tag done">Written</span></div>
+        <p>
+          <strong>Epic's built-in Unreal MCP</strong>, shipped in UE 5.8 (June 2026) &mdash; this is
+          the entire reason for the engine upgrade. It embeds an MCP server inside the editor
+          process, so an AI agent can spawn actors, configure lighting, build material instances and
+          run automation tests.
+        </p>
+        <pre>Plugins:  Unreal MCP, All Toolsets   <span class="dim">(Toolset Registry follows automatically)</span>
+Prefs:    General &gt; Model Context Protocol &gt; Auto Start Server
+Console:  <b>ModelContextProtocol.GenerateClientConfig ClaudeCode</b>
+
+Binds     http://127.0.0.1:8000/mcp   <span class="dim">loopback only, no auth, experimental</span></pre>
+        <p>
+          <strong>Our own <code>seawall-mcp</code></strong> covers what Epic's doesn't. Epic's server
+          drives the <em>editor</em>; it can't compile, read logs, or show me the game. Same
+          architecture as the Blender MCP &mdash; a PEP 723 header declares its own dependencies so
+          <code>uv run server.py</code> needs no venv &mdash; but with no socket at all, which makes it
+          much harder to break.
+        </p>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Tool</th><th>What it's for</th></tr></thead>
+            <tbody>
+              <tr><td><code>project_info()</code></td><td>Sanity check &mdash; engine path, modules, ever been built</td></tr>
+              <tr><td><code>build()</code></td><td>Compile, returning <strong>only</strong> the error lines (raw logs are ~50k lines of noise)</td></tr>
+              <tr><td><code>tail_log()</code></td><td>Read <code>Saved/Logs/Seawall.log</code> &mdash; where every <code>UE_LOG</code> lands</td></tr>
+              <tr><td><code>find_in_log()</code></td><td>Regex search the log with context</td></tr>
+              <tr><td><code>run_tests()</code></td><td>Headless automation tests</td></tr>
+              <tr><td><code>latest_screenshot()</code></td><td>Let me actually see the game</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 05 -->
+    <div class="entry">
+      <div class="seq">05</div>
+      <div>
+        <div class="entry-head"><h3>Git, with LFS from commit zero</h3><span class="tag done">Done</span></div>
+        <p>
+          <code>.gitattributes</code> exists <em>before</em> the first binary asset. This ordering is
+          non-negotiable: <code>.uasset</code> and <code>.umap</code> are binary, and Git stores a
+          complete new copy on every change &mdash; a 200 MB level edited fifty times becomes 10 GB of
+          unusable history. LFS keeps them outside the repo and stores a pointer instead. Adding it
+          afterwards means rewriting history.
+        </p>
+      </div>
+    </div>
+
+    <!-- 06 -->
+    <div class="entry">
+      <div class="seq">06</div>
+      <div>
+        <div class="entry-head"><h3>The install that couldn't be fixed by freeing space</h3><span class="tag fixed">Fixed</span></div>
+        <p>The 5.8 install kept failing with a dialog saying <em>"try to free up space on your drive
+        and attempt to install again"</em>, error code <code>IS-IN-DS01</code>. The launcher log confirmed
+        <code>DS</code> = disk space:</p>
+        <pre class="bad">LogEoshPatcher: BpsEndStats.ErrorCode: <span class="hl-bad">'DS01'</span>
+LogDownloadManager: AppId [ue:...:UE_5.8] AlertCode=<span class="hl-bad">[IS-IN-DS01]</span> IncompleteInstall=1
+LogAutoUpdateService: The installation failed ... the installer will no longer try
+                      to perform an automatic update again until the user specifies it</pre>
+        <p>
+          <strong>But freeing space would not have fixed it</strong>, and that's the useful part. The
+          launcher had written a pending record that hard-pinned the destination:
+        </p>
+        <pre>...\Manifests\Pending\&lt;hash&gt;.item
+
+  <b>InstallLocation</b>       C:\Program Files\Epic Games\UE_5.8   <span class="hl-bad">&lt;-- pinned</span>
+  <b>InstallSize</b>           31693779023   (31.7 GB)
+  <b>bIsIncompleteInstall</b>  True</pre>
+        <p>
+          Because a half-finished install existed, the Library offered <strong>Resume</strong> instead
+          of a fresh install dialog &mdash; so there was <strong>no drive picker to change.</strong>
+          Every retry went back to C: and failed identically. The log even refused outright:
+          <code>AppState=[AppPatching] not installable ... + cancelling</code>.
+        </p>
+        <p>The fix was to delete the stuck record. We verified the folder held exactly one file &mdash;
+        a 35 MB manifest, <strong>zero engine binaries</strong> &mdash; before removing anything.</p>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Path</th><th>What it holds</th></tr></thead>
+            <tbody>
+              <tr><td><code>...\EpicGamesLauncher\Data\Manifests\*.item</code></td><td>One JSON per app &mdash; install path, version, size</td></tr>
+              <tr><td><code>...\Manifests\Pending\</code></td><td>Queued or half-finished installs &mdash; <strong>the thing that gets stuck</strong></td></tr>
+              <tr><td><code>...\UnrealEngineLauncher\LauncherInstalled.dat</code></td><td>What the launcher believes is installed</td></tr>
+              <tr><td><code>%LOCALAPPDATA%\EpicGamesLauncher\Saved\Logs\</code></td><td>The actual error codes</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          With the record cleared and 5.7 uninstalled (reclaiming 26.6 GB, taking C: from 16 GB to
+          42 GB free), the install finally had both a clean slate <em>and</em> room to land.
+        </p>
+      </div>
+    </div>
+
+    <!-- 07 -->
+    <div class="entry">
+      <div class="seq">07</div>
+      <div>
+        <div class="entry-head"><h3>Keeping the shader cache off C:</h3><span class="tag done">Done</span></div>
+        <p>
+          Unreal's <strong>derived data cache</strong> &mdash; compiled shaders, converted textures
+          &mdash; routinely reaches 10&ndash;50 GB. By default it lands in
+          <code>%LOCALAPPDATA%</code>, i.e. C:, which after the engine install has roughly 10 GB
+          spare. Redirected before the engine ever ran, so there was nothing to migrate:
+        </p>
+        <pre class="good">[Environment]::SetEnvironmentVariable(
+    <b>'UE-LocalDataCachePath'</b>, 'D:\UnrealDDC\Local', 'User')</pre>
+        <p>
+          Combined with every project living on D:, the only thing left on C: is the engine itself.
+          This is what makes a C: engine install survivable rather than a slow-motion problem.
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <h2>Where things stand</h2>
+
+  <ul class="check">
+    <li class="d">Hardware audited; disk strategy set (everything Unreal on D:)</li>
+    <li class="d">5 projects copied to <code>D:\UnrealProjects\</code> &mdash; verified by file count <em>and</em> byte size</li>
+    <li class="d">C++ toolchain fixed (.NET Framework 4.6.2 SDK + MSVC 14.44) &mdash; verified by a real compile and link</li>
+    <li class="d"><code>seawall-mcp</code> server written and syntax-checked</li>
+    <li class="d">git + LFS configured before any binary asset</li>
+    <li class="d">Stuck Epic install record cleared</li>
+    <li class="d">UE 5.7 uninstalled &mdash; reclaimed 26.6 GB</li>
+    <li class="d">DDC redirected to <code>D:\UnrealDDC\Local</code></li>
+    <li class="r">UE 5.8.2 installing (31.7 GB)</li>
+    <li class="o">Re-run <code>ToolchainTest</code> against 5.8</li>
+    <li class="y">Verify all 5 migrated projects open in 5.8 &mdash; <strong>your job</strong>, you know what they should look like</li>
+    <li class="o">Delete the C: originals &mdash; another 7.9 GB</li>
+    <li class="o">Create the Seawall project; wire both MCP servers</li>
+    <li class="o"><strong>M1 &mdash; a corridor you're afraid to walk down</strong></li>
+  </ul>
+
+  <h2>The road from here</h2>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>#</th><th>Milestone</th><th>Days</th><th>Ends with</th></tr></thead>
+      <tbody>
+        <tr><td class="num">M1</td><td>Walk the corridor</td><td class="num">2&ndash;3</td><td>A hallway that is genuinely frightening</td></tr>
+        <tr><td class="num">M2</td><td>The Hunter</td><td class="num">4&ndash;5</td><td>Noise propagation, the Watchman, hiding &mdash; the core loop</td></tr>
+        <tr><td class="num">M3</td><td>Survival systems</td><td class="num">5&ndash;7</td><td>Inventory, locks, puzzles, ammo economy</td></tr>
+        <tr><td class="num">M4</td><td>The Island</td><td class="num">10&ndash;14</td><td>Pier, blocks, school, pump house, shafts</td></tr>
+        <tr><td class="num">M5</td><td>The Bestiary</td><td class="num">10&ndash;14</td><td>Shiftmen, Drowned, Hollow, The Voice + AI Director</td></tr>
+        <tr><td class="num">M6</td><td>Bosses</td><td class="num">5&ndash;7</td><td>Three encounters, each its own arena mechanic</td></tr>
+        <tr><td class="num">M7</td><td>Story</td><td class="num">10&ndash;14</td><td>Kaito, cutscenes, the three acts, the betrayal</td></tr>
+        <tr><td class="num">M8</td><td>Art &amp; audio</td><td class="num">14&ndash;21</td><td>The "a solo dev made this?" pass</td></tr>
+        <tr><td class="num">M9</td><td>Product</td><td class="num">7&ndash;10</td><td>Menus, saves, packaging, 60fps, Steam page</td></tr>
+        <tr><td class="num">M10</td><td>Co-op</td><td class="num">later</td><td>Two players over EOS</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    Honest total to a shippable build: <strong>roughly three to four months of steady work.</strong>
+    Every milestone above is playable on its own, so there's never more than a week between
+    something you can show someone.
+  </p>
+
+  <div class="note">
+    <span class="lbl">The rule that protects all of it</span>
+    <p>Scope creep is what kills solo games. <strong>4&ndash;5 hours is the cap.</strong> Every
+    "what if we also&hellip;" goes on a parked list, not into the build. Separately, everything is
+    written server-authoritative from the first line of C++ &mdash; single player is just a
+    one-player listen server &mdash; because retrofitting co-op into a finished game is a rewrite,
+    and doing it right now costs almost nothing.</p>
+  </div>
+
+  <div class="foot">
+    <span>SEAWALL &middot; build log</span>
+    <span>Session 01 &middot; 5 Sep 2026</span>
+  </div>
+
+</div>

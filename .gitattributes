@@ -1,0 +1,47 @@
+# Git LFS configuration for Seawall
+#
+# Why this file matters: Unreal content files (.uasset, .umap) are BINARY.
+# Git stores a complete new copy of a binary file on every single change, so a
+# 200 MB level edited fifty times becomes 10 GB of repo history. Git LFS stores
+# them outside the repo and keeps only a small pointer in git history.
+#
+# This must exist BEFORE the first commit of any binary asset. Adding LFS after
+# the fact means rewriting history, which is painful - so it is here from day 1.
+
+# --- Unreal content --------------------------------------------------------
+*.uasset  filter=lfs diff=lfs merge=lfs -text
+*.umap    filter=lfs diff=lfs merge=lfs -text
+
+# --- Textures --------------------------------------------------------------
+*.png     filter=lfs diff=lfs merge=lfs -text
+*.jpg     filter=lfs diff=lfs merge=lfs -text
+*.jpeg    filter=lfs diff=lfs merge=lfs -text
+*.tga     filter=lfs diff=lfs merge=lfs -text
+*.exr     filter=lfs diff=lfs merge=lfs -text
+*.hdr     filter=lfs diff=lfs merge=lfs -text
+*.psd     filter=lfs diff=lfs merge=lfs -text
+
+# --- Audio -----------------------------------------------------------------
+*.wav     filter=lfs diff=lfs merge=lfs -text
+*.ogg     filter=lfs diff=lfs merge=lfs -text
+*.mp3     filter=lfs diff=lfs merge=lfs -text
+
+# --- Source art (Blender / FBX from our own pipeline) ----------------------
+*.blend   filter=lfs diff=lfs merge=lfs -text
+*.fbx     filter=lfs diff=lfs merge=lfs -text
+*.glb     filter=lfs diff=lfs merge=lfs -text
+*.gltf    filter=lfs diff=lfs merge=lfs -text
+*.obj     filter=lfs diff=lfs merge=lfs -text
+
+# --- Video -----------------------------------------------------------------
+*.mp4     filter=lfs diff=lfs merge=lfs -text
+*.mov     filter=lfs diff=lfs merge=lfs -text
+
+# --- Text files: force LF so the repo is consistent ------------------------
+*.cpp     text eol=lf
+*.h       text eol=lf
+*.cs      text eol=lf
+*.py      text eol=lf
+*.ini     text eol=lf
+*.md      text eol=lf
+*.uproject text eol=lf
