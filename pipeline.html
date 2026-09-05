@@ -102,6 +102,110 @@ body {
 
 .wrap { max-width: 900px; margin: 0 auto; padding: 0 24px 96px; }
 
+/* ---------- sticky top navigation ---------- */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  /* Opaque, from a token -- a transparent bar would let text scroll through it. */
+  background: var(--g-0);
+  border-bottom: 1px solid var(--line);
+}
+.nav-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 24px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.nav-brand {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 1.02rem;
+  letter-spacing: .05em;
+  color: var(--tx-1);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.nav-brand:hover { color: var(--oxide); }
+.nav-links { display: flex; gap: 6px; }
+.nav-links a {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  text-decoration: none;
+  padding: 7px 12px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.nav-links a:hover { color: var(--tx-1); border-color: var(--line); }
+.nav-links a[aria-current="page"] {
+  color: var(--oxide);
+  border-color: var(--oxide);
+  background: var(--oxide-wash);
+}
+
+/* ---------- big next-page card ---------- */
+
+.pagelink {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px 20px;
+  margin: 56px 0 0;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--oxide);
+  background: var(--g-1);
+  text-decoration: none;
+  color: inherit;
+}
+.pagelink:hover { background: var(--g-2); border-left-width: 6px; }
+.pagelink .k {
+  grid-column: 1;
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--oxide);
+}
+.pagelink .t {
+  grid-column: 1;
+  font-family: var(--f-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: var(--tx-1);
+  line-height: 1.1;
+}
+.pagelink .d {
+  grid-column: 1;
+  font-size: .94rem;
+  color: var(--tx-2);
+  max-width: 56ch;
+}
+.pagelink .arrow {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  font-family: var(--f-display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--oxide);
+  line-height: 1;
+}
+@media (max-width: 520px) {
+  .pagelink { grid-template-columns: 1fr; }
+  .pagelink .arrow { grid-column: 1; grid-row: auto; font-size: 1.5rem; }
+}
+
 /* ---------- masthead ---------- */
 
 .mast {
@@ -396,6 +500,16 @@ ul.plain li { margin-bottom: 7px; max-width: 66ch; }
   * { animation: none !important; transition: none !important; }
 }
 </style>
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="nav-brand" href="/">SEAWALL</a>
+    <div class="nav-links">
+      <a href="/">Build Log</a>
+      <a href="/pipeline.html" aria-current="page">Workstation</a>
+    </div>
+  </div>
+</nav>
+
 <div class="wrap">
 
   <header class="mast">
@@ -404,7 +518,7 @@ ul.plain li { margin-bottom: 7px; max-width: 66ch; }
     <p class="dek">
       Which tool does which job, how assets travel from an idea to the island, where sound comes
       from, and the performance discipline that starts on <strong>day one</strong> rather than
-      the month before shipping. <a href="/">&larr; back to the build log</a>
+      the month before shipping.
     </p>
 
     <div class="board">
@@ -674,6 +788,14 @@ ROUTE 3 &mdash; bespoke 3D          <span class="dim">creatures, hero props, any
     performance budget all at once, and everything after it becomes repetition rather than
     invention.
   </p>
+
+  <a class="pagelink" href="/">
+    <span class="k">Back to</span>
+    <span class="t">The Build Log</span>
+    <span class="d">Every session recorded &mdash; the decisions, the engineering, and everything
+      that broke on the way.</span>
+    <span class="arrow" aria-hidden="true">&larr;</span>
+  </a>
 
   <div class="foot">
     <span>SEAWALL &middot; workstation &amp; pipeline</span>

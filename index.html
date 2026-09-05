@@ -103,6 +103,110 @@ body {
 
 .wrap { max-width: 900px; margin: 0 auto; padding: 0 24px 96px; }
 
+/* ---------- sticky top navigation ---------- */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  /* Opaque, from a token -- a transparent bar would let text scroll through it. */
+  background: var(--g-0);
+  border-bottom: 1px solid var(--line);
+}
+.nav-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 24px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.nav-brand {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 1.02rem;
+  letter-spacing: .05em;
+  color: var(--tx-1);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.nav-brand:hover { color: var(--oxide); }
+.nav-links { display: flex; gap: 6px; }
+.nav-links a {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  text-decoration: none;
+  padding: 7px 12px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.nav-links a:hover { color: var(--tx-1); border-color: var(--line); }
+.nav-links a[aria-current="page"] {
+  color: var(--oxide);
+  border-color: var(--oxide);
+  background: var(--oxide-wash);
+}
+
+/* ---------- big next-page card ---------- */
+
+.pagelink {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px 20px;
+  margin: 56px 0 0;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--oxide);
+  background: var(--g-1);
+  text-decoration: none;
+  color: inherit;
+}
+.pagelink:hover { background: var(--g-2); border-left-width: 6px; }
+.pagelink .k {
+  grid-column: 1;
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--oxide);
+}
+.pagelink .t {
+  grid-column: 1;
+  font-family: var(--f-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: var(--tx-1);
+  line-height: 1.1;
+}
+.pagelink .d {
+  grid-column: 1;
+  font-size: .94rem;
+  color: var(--tx-2);
+  max-width: 56ch;
+}
+.pagelink .arrow {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  font-family: var(--f-display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--oxide);
+  line-height: 1;
+}
+@media (max-width: 520px) {
+  .pagelink { grid-template-columns: 1fr; }
+  .pagelink .arrow { grid-column: 1; grid-row: auto; font-size: 1.5rem; }
+}
+
 /* ---------- masthead ---------- */
 
 .mast {
@@ -398,6 +502,16 @@ ul.plain li { margin-bottom: 7px; max-width: 66ch; }
 }
 </style>
 
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="nav-brand" href="/">SEAWALL</a>
+    <div class="nav-links">
+      <a href="/" aria-current="page">Build Log</a>
+      <a href="/pipeline.html">Workstation</a>
+    </div>
+  </div>
+</nav>
+
 <div class="wrap">
 
   <header class="mast">
@@ -408,8 +522,6 @@ ul.plain li { margin-bottom: 7px; max-width: 66ch; }
       abandoned concrete mining island off Nagasaki. Four to five hours, scarce combat,
       built in Unreal Engine 5.8. This is the working record &mdash; every decision, every
       thing that broke, and how it got fixed.
-      <br><a href="/pipeline.html"><strong>The Workstation &rarr;</strong></a> &mdash; which tool
-      does which job, how sound gets made, and the performance budget.
     </p>
 
     <div class="board">
@@ -966,6 +1078,14 @@ Editor binary: built</pre>
     one-player listen server &mdash; because retrofitting co-op into a finished game is a rewrite,
     and doing it right now costs almost nothing.</p>
   </div>
+
+  <a class="pagelink" href="/pipeline.html">
+    <span class="k">Next page</span>
+    <span class="t">The Workstation</span>
+    <span class="d">Which tool does which job, the three asset routes, where sound comes from,
+      and the performance budget we hold from day one.</span>
+    <span class="arrow" aria-hidden="true">&rarr;</span>
+  </a>
 
   <div class="foot">
     <span>SEAWALL &middot; build log</span>
