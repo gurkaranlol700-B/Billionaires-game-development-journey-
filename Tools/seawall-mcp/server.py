@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["mcp>=1.2.0"]
+# dependencies = ["mcp>=1.2.0,<2"]
 # ///
 #
 # NOTE ON THE MCP SDK VERSION

@@ -43,3 +43,6 @@ Config/*Local*.ini
 
 # Build logs from our own tooling
 *.log
+
+# MCP server virtualenv (recreate with: uv venv .venv && uv pip install mcp pywin32)
+Tools/seawall-mcp/.venv/
