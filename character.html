@@ -1,0 +1,767 @@
+<title>The Body You Cannot See</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* ==========================================================================
+   SEAWALL BUILD LOG
+   Dark-first: bare :root carries the complete dark palette, light overrides
+   under prefers-color-scheme:light and [data-theme="light"].
+   Palette is Gunkanjima -- wet concrete, sea dark, oxide rust on rebar.
+   ========================================================================== */
+
+:root {
+  /* grounds */
+  --g-0:  #0B0F11;   /* page ground -- sea-dark, blue-green cast */
+  --g-1:  #12181B;   /* raised surface */
+  --g-2:  #1A2226;   /* card */
+  --g-3:  #232D32;   /* inset / code */
+  --line: #2C383E;
+  --line-soft: #202A2F;
+
+  /* text */
+  --tx-1: #E4E9EA;   /* primary */
+  --tx-2: #A3B0B4;   /* secondary */
+  --tx-3: #6E7F85;   /* tertiary / labels */
+
+  /* accent + semantic */
+  --oxide:     #C05F32;   /* THE accent -- rust bleeding through concrete */
+  --oxide-dim: #8E4626;
+  --oxide-wash:#2A1912;
+  --verdigris: #5A9B85;   /* done */
+  --verdigris-wash:#132420;
+  --sodium:    #D9A441;   /* in progress / pending */
+  --sodium-wash:#241C0E;
+  --blood:     #C4483F;   /* blocked / failed */
+  --blood-wash:#26120F;
+
+  --shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 24px -12px rgba(0,0,0,.7);
+
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --g-0:  #E7E9E7;
+    --g-1:  #F1F2F0;
+    --g-2:  #FAFAF9;
+    --g-3:  #E4E7E5;
+    --line: #C9CFCC;
+    --line-soft: #DBE0DD;
+    --tx-1: #131A1C;
+    --tx-2: #4A585C;
+    --tx-3: #6E7F85;
+    --oxide:     #9C4520;
+    --oxide-dim: #C05F32;
+    --oxide-wash:#F6E7DF;
+    --verdigris: #2F6B57;
+    --verdigris-wash:#E0EDE8;
+    --sodium:    #8A6212;
+    --sodium-wash:#F5EBD6;
+    --blood:     #A32E26;
+    --blood-wash:#F7E2E0;
+    --shadow: 0 1px 2px rgba(19,26,28,.06), 0 8px 24px -14px rgba(19,26,28,.22);
+  }
+}
+
+:root[data-theme="light"] {
+  --g-0:  #E7E9E7;
+  --g-1:  #F1F2F0;
+  --g-2:  #FAFAF9;
+  --g-3:  #E4E7E5;
+  --line: #C9CFCC;
+  --line-soft: #DBE0DD;
+  --tx-1: #131A1C;
+  --tx-2: #4A585C;
+  --tx-3: #6E7F85;
+  --oxide:     #9C4520;
+  --oxide-dim: #C05F32;
+  --oxide-wash:#F6E7DF;
+  --verdigris: #2F6B57;
+  --verdigris-wash:#E0EDE8;
+  --sodium:    #8A6212;
+  --sodium-wash:#F5EBD6;
+  --blood:     #A32E26;
+  --blood-wash:#F7E2E0;
+  --shadow: 0 1px 2px rgba(19,26,28,.06), 0 8px 24px -14px rgba(19,26,28,.22);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--g-0);
+  color: var(--tx-1);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: 900px; margin: 0 auto; padding: 0 24px 96px; }
+
+/* ---------- sticky top navigation ---------- */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  /* Opaque, from a token -- a transparent bar would let text scroll through it. */
+  background: var(--g-0);
+  border-bottom: 1px solid var(--line);
+}
+.nav-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 24px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.nav-brand {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 1.02rem;
+  letter-spacing: .05em;
+  color: var(--tx-1);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.nav-brand:hover { color: var(--oxide); }
+.nav-links { display: flex; gap: 6px; }
+.nav-links a {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  text-decoration: none;
+  padding: 7px 12px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.nav-links a:hover { color: var(--tx-1); border-color: var(--line); }
+.nav-links a[aria-current="page"] {
+  color: var(--oxide);
+  border-color: var(--oxide);
+  background: var(--oxide-wash);
+}
+
+/* ---------- big next-page card ---------- */
+
+.pagelink {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px 20px;
+  margin: 56px 0 0;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--oxide);
+  background: var(--g-1);
+  text-decoration: none;
+  color: inherit;
+}
+.pagelink:hover { background: var(--g-2); border-left-width: 6px; }
+.pagelink .k {
+  grid-column: 1;
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--oxide);
+}
+.pagelink .t {
+  grid-column: 1;
+  font-family: var(--f-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: var(--tx-1);
+  line-height: 1.1;
+}
+.pagelink .d {
+  grid-column: 1;
+  font-size: .94rem;
+  color: var(--tx-2);
+  max-width: 56ch;
+}
+.pagelink .arrow {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  font-family: var(--f-display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--oxide);
+  line-height: 1;
+}
+@media (max-width: 520px) {
+  .pagelink { grid-template-columns: 1fr; }
+  .pagelink .arrow { grid-column: 1; grid-row: auto; font-size: 1.5rem; }
+}
+
+/* ---------- masthead ---------- */
+
+.mast {
+  border-bottom: 1px solid var(--line);
+  padding: 56px 0 28px;
+  margin-bottom: 40px;
+}
+.eyebrow {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--oxide);
+  margin: 0 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.eyebrow::before {
+  content: "";
+  width: 28px; height: 2px;
+  background: var(--oxide);
+  flex: none;
+}
+h1 {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(2.6rem, 9vw, 4.6rem);
+  line-height: .94;
+  letter-spacing: -.035em;
+  margin: 0 0 16px;
+  text-wrap: balance;
+}
+.dek {
+  font-size: 1.06rem;
+  color: var(--tx-2);
+  max-width: 62ch;
+  margin: 0;
+}
+.dek strong { color: var(--tx-1); font-weight: 600; }
+
+/* ---------- status board ---------- */
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  background: var(--line-soft);
+  border: 1px solid var(--line-soft);
+  margin: 32px 0 0;
+}
+.cell { background: var(--g-1); padding: 14px 16px; }
+.cell .k {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  display: block;
+  margin-bottom: 6px;
+}
+.cell .v {
+  font-family: var(--f-display);
+  font-size: 1.22rem;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums;
+}
+.cell .v.ok   { color: var(--verdigris); }
+.cell .v.warn { color: var(--sodium); }
+
+/* ---------- section headings ---------- */
+
+h2 {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 1.6rem;
+  letter-spacing: -.02em;
+  margin: 64px 0 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  text-wrap: balance;
+}
+h3 {
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: 1.06rem;
+  letter-spacing: -.005em;
+  margin: 28px 0 10px;
+}
+p { margin: 0 0 14px; max-width: 68ch; }
+a { color: var(--oxide); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--oxide);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ---------- log entries ---------- */
+
+.log { display: flex; flex-direction: column; gap: 0; }
+
+.entry {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: 0 22px;
+  padding: 30px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.entry:last-child { border-bottom: none; }
+
+.seq {
+  font-family: var(--f-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx-3);
+  padding-top: 4px;
+  position: relative;
+}
+.seq::after {
+  content: "";
+  position: absolute;
+  left: 0; top: 30px; bottom: -34px;
+  width: 1px;
+  background: var(--line-soft);
+}
+.entry:last-child .seq::after { display: none; }
+
+.entry-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.entry-head h3 { margin: 0; font-size: 1.16rem; }
+
+.tag {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.tag.done    { color: var(--verdigris); border-color: var(--verdigris); background: var(--verdigris-wash); }
+.tag.running { color: var(--sodium);    border-color: var(--sodium);    background: var(--sodium-wash); }
+.tag.fixed   { color: var(--oxide);     border-color: var(--oxide);     background: var(--oxide-wash); }
+.tag.you     { color: var(--tx-2);      border-color: var(--line);      background: var(--g-2); }
+
+/* ---------- evidence blocks ---------- */
+
+pre {
+  font-family: var(--f-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  background: var(--g-3);
+  border: 1px solid var(--line-soft);
+  border-left: 2px solid var(--tx-3);
+  padding: 13px 15px;
+  margin: 14px 0;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--tx-2);
+}
+pre.bad  { border-left-color: var(--blood); }
+pre.good { border-left-color: var(--verdigris); }
+pre b { color: var(--tx-1); font-weight: 600; }
+pre .hl-bad  { color: var(--blood); font-weight: 600; }
+pre .hl-good { color: var(--verdigris); font-weight: 600; }
+pre .dim { color: var(--tx-3); }
+
+code {
+  font-family: var(--f-mono);
+  font-size: .88em;
+  background: var(--g-3);
+  border: 1px solid var(--line-soft);
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+pre code { background: none; border: none; padding: 0; white-space: pre; }
+
+/* ---------- tables ---------- */
+
+.tw { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line-soft); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 460px; }
+th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line-soft); }
+th {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  font-weight: 500;
+  background: var(--g-1);
+}
+tbody tr:last-child td { border-bottom: none; }
+td.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.ok  { color: var(--verdigris); font-family: var(--f-mono); font-size: 12px; font-weight: 600; }
+
+/* ---------- callout ---------- */
+
+.note {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--oxide);
+  background: var(--g-1);
+  padding: 15px 18px;
+  margin: 18px 0;
+}
+.note .lbl {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--oxide);
+  display: block;
+  margin-bottom: 7px;
+}
+.note p:last-child { margin-bottom: 0; }
+.note.lesson { border-left-color: var(--verdigris); }
+.note.lesson .lbl { color: var(--verdigris); }
+
+/* ---------- story block ---------- */
+
+.acts { display: grid; gap: 1px; background: var(--line-soft); border: 1px solid var(--line-soft); margin: 18px 0; }
+.act { background: var(--g-1); padding: 16px 18px; }
+.act .n {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--oxide);
+  display: block;
+  margin-bottom: 6px;
+}
+.act h4 { font-family: var(--f-display); font-size: 1.02rem; font-weight: 700; margin: 0 0 6px; letter-spacing: -.01em; }
+.act p { margin: 0; font-size: .94rem; color: var(--tx-2); max-width: none; }
+
+/* ---------- checklist ---------- */
+
+ul.check { list-style: none; padding: 0; margin: 16px 0; display: flex; flex-direction: column; gap: 2px; }
+ul.check li {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  align-items: baseline;
+  padding: 7px 10px;
+  background: var(--g-1);
+  border-left: 2px solid var(--line);
+  font-size: .95rem;
+}
+ul.check li::before { font-family: var(--f-mono); font-size: 12px; font-weight: 600; }
+ul.check li.d { border-left-color: var(--verdigris); color: var(--tx-2); }
+ul.check li.d::before { content: "[x]"; color: var(--verdigris); }
+ul.check li.r { border-left-color: var(--sodium); }
+ul.check li.r::before { content: "[~]"; color: var(--sodium); }
+ul.check li.o::before { content: "[ ]"; color: var(--tx-3); }
+ul.check li.y { border-left-color: var(--oxide); }
+ul.check li.y::before { content: "[!]"; color: var(--oxide); }
+
+ul.plain { margin: 12px 0; padding-left: 20px; }
+ul.plain li { margin-bottom: 7px; max-width: 66ch; }
+
+/* ---------- footer ---------- */
+
+.foot {
+  margin-top: 72px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  color: var(--tx-3);
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 620px) {
+  .entry { grid-template-columns: 1fr; gap: 0; }
+  .seq { padding-top: 0; margin-bottom: 8px; }
+  .seq::after { display: none; }
+  .wrap { padding: 0 18px 64px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="nav-brand" href="https://billionaires-game-development-journ.vercel.app/">SEAWALL</a>
+    <div class="nav-links">
+      <a href="https://billionaires-game-development-journ.vercel.app/">Build Log</a>
+      <a href="https://billionaires-game-development-journ.vercel.app/pipeline.html">Workstation</a>
+      <a href="https://billionaires-game-development-journ.vercel.app/handbook.html">Handbook</a>
+      <a href="https://billionaires-game-development-journ.vercel.app/fixtures.html">Fixtures</a>
+      <a href="https://billionaires-game-development-journ.vercel.app/character.html" aria-current="page">Character</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <p class="eyebrow">Seawall &middot; Session 04</p>
+    <h1>THE BODY YOU CANNOT SEE</h1>
+    <p class="dek">
+      A first-person character with weight, built without a single frame of animation.
+      Why Arthur Morgan's heaviness lives in the camera rather than the skeleton, what we
+      deliberately refused to build, and the crouch bug that put the player's eyes at ankle height.
+    </p>
+
+    <div class="board">
+      <div class="cell"><span class="k">C++ classes</span><span class="v">2</span></div>
+      <div class="cell"><span class="k">Animations</span><span class="v ok">0</span></div>
+      <div class="cell"><span class="k">Content assets needed</span><span class="v ok">0</span></div>
+      <div class="cell"><span class="k">Milestone</span><span class="v">M1</span></div>
+    </div>
+  </header>
+
+  <h2>The question that framed everything</h2>
+
+  <p>
+    The brief was &ldquo;can we mimic Arthur Morgan &mdash; that weight, that sense that a body
+    takes time to move.&rdquo; The instinct is that this needs a character: a skeleton, animations,
+    foot placement. It does not, and understanding why saved the entire session.
+  </p>
+
+  <div class="note lesson">
+    <span class="lbl">Rockstar solved a different problem</span>
+    <p>You <em>watch</em> Arthur. Third-person weight has to be visible, so it needs a motion-matched
+    skeleton with feet that plant correctly. You do not watch your own character &mdash; you
+    <em>are</em> them. In first person the same weight is delivered by two things that have no
+    skeleton at all: <strong>how the movement accelerates</strong>, and <strong>what the camera
+    does about it</strong>.</p>
+  </div>
+
+  <p>&ldquo;Whole character&rdquo; versus &ldquo;just the camera&rdquo; turned out to be a false choice. There are three layers and only one is optional:</p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Layer</th><th>What it is</th><th>Optional?</th></tr></thead>
+      <tbody>
+        <tr><td>Capsule &amp; movement</td><td>The physical body. Collides, fits through doors, crouches under things</td><td><strong>Never.</strong> Same work either way</td></tr>
+        <tr><td>Camera feel</td><td>Bob, sway, landing dip, lean, FOV shifts, breathing</td><td><strong>No</strong> &mdash; in first person this <em>is</em> the weight</td></tr>
+        <tr><td>Visible mesh</td><td>Arms, hands, legs, body</td><td><strong>Yes.</strong> The only part deferred</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>So a whole character got built. Just not a character <em>model</em>.</p>
+
+  <h2>The numbers, and what each one is for</h2>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Setting</th><th>Value</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Walk</td><td>150 cm/s</td><td>Deliberate. Exploration should carry dread, not commute</td></tr>
+        <tr><td>Crouch</td><td>75 cm/s</td><td>Slow enough that hiding is a real cost</td></tr>
+        <tr><td>Sprint</td><td>420 cm/s</td><td>Genuinely fast, and genuinely brief</td></tr>
+        <tr><td><strong>Max acceleration</strong></td><td><strong>900</strong></td><td><strong>The weight number.</strong> ~0.45s to reach walk speed, so you lean into motion rather than teleporting into it</td></tr>
+        <tr><td>Braking deceleration</td><td>1100</td><td>You slide a few centimetres past where you released. Nothing in a body stops dead</td></tr>
+        <tr><td>FOV</td><td>75 &rarr; 81 sprinting</td><td>Narrow vision means things enter frame suddenly. The FOV push is most of what sells a sprint</td></tr>
+        <tr><td>Stamina</td><td>100, &minus;25/s</td><td>Four seconds of sprint. A panic button with a price, not transport</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <span class="lbl">Head bob is the most overdone effect in first-person games</span>
+    <p>Too much causes motion sickness and reads as amateur &mdash; RDR2's own first-person mode is
+    far more restrained than people remember. The target is <em>&ldquo;you would notice if it were
+    gone, but you never notice it is there.&rdquo;</em> So it ships with a master on/off switch,
+    because the only way to find that line is to walk the corridor with it on, then off.</p>
+    <p>The bob is driven by <strong>distance travelled, not elapsed time</strong>, so footsteps stay
+    in sync whether you are creeping or sprinting. Time-driven bob drifts out of step the moment
+    speed changes, and it always looks wrong without anyone being able to say why.</p>
+  </div>
+
+  <h2>Three decisions made now to avoid pain later</h2>
+
+  <div class="log">
+
+    <div class="entry">
+      <div class="seq">1</div>
+      <div>
+        <div class="entry-head"><h3>The camera hangs off a body that does not exist yet</h3><span class="tag done">Hook</span></div>
+        <p>
+          <code>FirstPersonBody</code> is an empty <code>USkeletalMeshComponent</code>, and the
+          camera is attached to <em>it</em> rather than to the capsule. Pointless today. At M3, when
+          a MetaHuman arrives, it becomes a mesh assignment instead of a restructure &mdash;
+          <code>HeadSocketName</code> and <code>HeadSocketDamping</code> are already waiting.
+        </p>
+        <div class="note">
+          <span class="lbl">Why damping is already in the design</span>
+          <p>A true first-person body drives the camera from the head bone. Piping raw head-bone
+          motion straight into the view is precisely what makes players sick, so the camera must
+          <em>follow</em> the head with damping rather than being welded to it. Designing that in
+          from the start costs one float. Retrofitting it means rewriting the camera.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="entry">
+      <div class="seq">2</div>
+      <div>
+        <div class="entry-head"><h3>Footsteps already shout into an empty room</h3><span class="tag done">Wired</span></div>
+        <p>
+          Every footstep reports a hearing event &mdash; walk 400, sprint 1400, crouch 120, landing
+          900 units. Nothing listens. Nothing will until M2.
+        </p>
+        <pre class="good">UAISense_Hearing::ReportNoiseEvent(
+    GetWorld(), GetActorLocation(), Loudness, this, Range, TEXT("Footstep"));</pre>
+        <div class="note lesson">
+          <span class="lbl">Lesson</span>
+          <p>The whole horror loop rests on the creature hearing you. Adding that <em>after</em>
+          movement exists means auditing every code path that can move a player &mdash; walking,
+          sprinting, landing, being pushed, ledge grabs that do not exist yet. Adding it while
+          there is exactly one path costs four lines.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="entry">
+      <div class="seq">3</div>
+      <div>
+        <div class="entry-head"><h3>Input that needs no content authored</h3><span class="tag done">Done</span></div>
+        <p>
+          Enhanced Input normally wants Input Action and Mapping Context <em>assets</em> created by
+          hand before a single key works. Instead the character builds them in code when none are
+          assigned &mdash; so it ran the moment it compiled, with zero content. Every action is still
+          an exposed property, so assigning real assets later makes them rebindable without touching
+          code.
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <h2>The bug that put the player's eyes at ankle height</h2>
+
+  <p>
+    Standing worked. Crouching would have dropped the view to roughly <strong>54&nbsp;cm</strong> off
+    the floor &mdash; not crouched, lying down. Nobody had crouched yet, so nobody had seen it.
+  </p>
+  <p>
+    The cause is a mismatch between two systems that both look correct alone. The camera sits at a
+    fixed offset from <code>FirstPersonBody</code>, which is placed at the capsule's base for a
+    <em>standing</em> capsule. But when Unreal crouches a character it <strong>shrinks the capsule
+    and drops the actor</strong> so the feet stay planted &mdash; and that fixed offset no longer
+    points at the floor.
+  </p>
+  <pre class="bad">standing:  capsule centre 92 above floor, body at &minus;92, eye +174 &rarr; <span class="hl-good">174 ✓</span>
+crouched:  capsule centre 50 above floor, body at &minus;92, eye +98  &rarr; <span class="hl-bad">56 ✗</span></pre>
+  <pre class="good">const float HalfHeightCompensation =
+    GetDefaultHalfHeight() - GetCapsuleComponent()-&gt;GetUnscaledCapsuleHalfHeight();
+<span class="dim">// crouched: 92 - 50 = 42, added back &rarr; eye lands at 98 above the floor</span></pre>
+  <p>
+    The body offset is now derived from the capsule rather than hard-coded, so the two cannot drift
+    apart again.
+  </p>
+
+  <div class="note lesson">
+    <span class="lbl">Lesson</span>
+    <p>Two correct-looking systems can be wrong together. A constant copied from one place into
+    another is a bug waiting for someone to change the original &mdash; derive it instead.</p>
+  </div>
+
+  <h2>Height, and the wrong thing to blame</h2>
+
+  <p>
+    First walkthrough verdict: <em>&ldquo;it looks like our main character is a dwarf.&rdquo;</em>
+    The eye sat at 165&nbsp;cm &mdash; a 175&nbsp;cm person. Entirely normal.
+  </p>
+  <div class="note">
+    <span class="lbl">The corridor is the problem, not the character</span>
+    <p>The ceiling is at <strong>4 metres</strong>. Real corridors are 2.4&ndash;3&nbsp;m. Under a
+    ceiling a third taller than reality, <em>any</em> human reads as short. The character went to
+    184&nbsp;cm because it was asked for, but the honest fix is dropping the ceiling &mdash; which
+    would also make the corridor more oppressive, which is the point of the whole level.</p>
+  </div>
+
+  <h2>Jump: forgiveness, not height</h2>
+
+  <p>
+    Jump strength varies by what you were doing &mdash; standing 340, walking 385, sprinting 445,
+    with sprint leaps costing double stamina and getting a little more air control so they can be
+    aimed. But the strength is not what makes a jump feel good.
+  </p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Mechanic</th><th>Window</th><th>What it fixes</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Coyote time</strong></td><td>0.12s</td><td>A jump pressed just <em>after</em> walking off a ledge still counts. Players press late; this forgives it</td></tr>
+        <tr><td><strong>Input buffering</strong></td><td>0.16s</td><td>A jump pressed just <em>before</em> landing fires on touchdown instead of being swallowed</td></tr>
+        <tr><td><strong>Variable height</strong></td><td>&times;0.45 on release</td><td>Tap for a hop, hold for the full arc. One button, two intentions</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note lesson">
+    <span class="lbl">Why this matters more than the numbers</span>
+    <p>Without these three, roughly one press in five appears to be ignored &mdash; and it genuinely
+    was ignored, correctly, by a system that only accepts input during the exact frames the player
+    is grounded. Players do not experience that as their own mistiming. They experience it as the
+    game being unresponsive. All three mechanics exist to accept input the player <em>meant</em>
+    rather than input they precisely delivered.</p>
+  </div>
+
+  <h2>What was deliberately not built</h2>
+
+  <ul class="check">
+    <li class="o"><strong>Arms and hands</strong> &mdash; only visible while holding something, and nothing exists to hold. The rig depends entirely on whether it is a flashlight, a lighter or a crowbar. Build now, build twice</li>
+    <li class="o"><strong>A flashlight model</strong> &mdash; it is a bare spot light on the camera. Correct for a prototype</li>
+    <li class="o"><strong>A true first-person body</strong> &mdash; wanted as a feature, deferred to M3, and built from MetaHuman rather than by hand. Legs that do not quite match where your feet are break immersion worse than seeing nothing</li>
+  </ul>
+
+  <h2>Where things stand</h2>
+
+  <ul class="check">
+    <li class="d">First-person character with weighted movement, stamina, lean, crouch and jump</li>
+    <li class="d">Camera feel: distance-driven bob, landing dip, exhaustion breathing, sprint FOV push</li>
+    <li class="d">Flashlight with battery wired but drain at zero</li>
+    <li class="d">Footstep hearing events broadcasting, ready for M2</li>
+    <li class="d">Game mode in C++, PlayerStart in the corridor, Play works</li>
+    <li class="d">The corridor has been walked. This was the whole point</li>
+    <li class="o">No audio at all &mdash; a horror corridor in silence cannot really be judged</li>
+    <li class="o"><code>stat unit</code> still never run. No performance baseline exists</li>
+    <li class="o">Nothing hunts you yet. That is M2, and it is the actual game</li>
+  </ul>
+
+  <div class="note lesson">
+    <span class="lbl">The session in one line</span>
+    <p>A pretty corridor is a screenshot. A corridor you can walk down badly is a prototype. The
+    difference is entirely in numbers nobody will ever see.</p>
+  </div>
+
+  <a class="pagelink" href="https://billionaires-game-development-journ.vercel.app/fixtures.html">
+    <span class="k">Previously</span>
+    <span class="t">From Prompt to Fixture</span>
+    <span class="d">An AI image becomes a sculpt, a sculpt becomes a game asset, and a light finally glows.</span>
+    <span class="arrow" aria-hidden="true">&larr;</span>
+  </a>
+
+  <div class="foot">
+    <span>SEAWALL &middot; the body you cannot see</span>
+    <span>Session 04 &middot; 7 Sep 2026</span>
+  </div>
+
+</div>
