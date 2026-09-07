@@ -1,0 +1,802 @@
+<title>Surface &amp; Light</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* ==========================================================================
+   SEAWALL BUILD LOG
+   Dark-first: bare :root carries the complete dark palette, light overrides
+   under prefers-color-scheme:light and [data-theme="light"].
+   Palette is Gunkanjima -- wet concrete, sea dark, oxide rust on rebar.
+   ========================================================================== */
+
+:root {
+  /* grounds */
+  --g-0:  #0B0F11;   /* page ground -- sea-dark, blue-green cast */
+  --g-1:  #12181B;   /* raised surface */
+  --g-2:  #1A2226;   /* card */
+  --g-3:  #232D32;   /* inset / code */
+  --line: #2C383E;
+  --line-soft: #202A2F;
+
+  /* text */
+  --tx-1: #E4E9EA;   /* primary */
+  --tx-2: #A3B0B4;   /* secondary */
+  --tx-3: #6E7F85;   /* tertiary / labels */
+
+  /* accent + semantic */
+  --oxide:     #C05F32;   /* THE accent -- rust bleeding through concrete */
+  --oxide-dim: #8E4626;
+  --oxide-wash:#2A1912;
+  --verdigris: #5A9B85;   /* done */
+  --verdigris-wash:#132420;
+  --sodium:    #D9A441;   /* in progress / pending */
+  --sodium-wash:#241C0E;
+  --blood:     #C4483F;   /* blocked / failed */
+  --blood-wash:#26120F;
+
+  --shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 24px -12px rgba(0,0,0,.7);
+
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --g-0:  #E7E9E7;
+    --g-1:  #F1F2F0;
+    --g-2:  #FAFAF9;
+    --g-3:  #E4E7E5;
+    --line: #C9CFCC;
+    --line-soft: #DBE0DD;
+    --tx-1: #131A1C;
+    --tx-2: #4A585C;
+    --tx-3: #6E7F85;
+    --oxide:     #9C4520;
+    --oxide-dim: #C05F32;
+    --oxide-wash:#F6E7DF;
+    --verdigris: #2F6B57;
+    --verdigris-wash:#E0EDE8;
+    --sodium:    #8A6212;
+    --sodium-wash:#F5EBD6;
+    --blood:     #A32E26;
+    --blood-wash:#F7E2E0;
+    --shadow: 0 1px 2px rgba(19,26,28,.06), 0 8px 24px -14px rgba(19,26,28,.22);
+  }
+}
+
+:root[data-theme="light"] {
+  --g-0:  #E7E9E7;
+  --g-1:  #F1F2F0;
+  --g-2:  #FAFAF9;
+  --g-3:  #E4E7E5;
+  --line: #C9CFCC;
+  --line-soft: #DBE0DD;
+  --tx-1: #131A1C;
+  --tx-2: #4A585C;
+  --tx-3: #6E7F85;
+  --oxide:     #9C4520;
+  --oxide-dim: #C05F32;
+  --oxide-wash:#F6E7DF;
+  --verdigris: #2F6B57;
+  --verdigris-wash:#E0EDE8;
+  --sodium:    #8A6212;
+  --sodium-wash:#F5EBD6;
+  --blood:     #A32E26;
+  --blood-wash:#F7E2E0;
+  --shadow: 0 1px 2px rgba(19,26,28,.06), 0 8px 24px -14px rgba(19,26,28,.22);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--g-0);
+  color: var(--tx-1);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: 900px; margin: 0 auto; padding: 0 24px 96px; }
+
+/* ---------- sticky top navigation ---------- */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  /* Opaque, from a token -- a transparent bar would let text scroll through it. */
+  background: var(--g-0);
+  border-bottom: 1px solid var(--line);
+}
+.nav-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 24px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.nav-brand {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 1.02rem;
+  letter-spacing: .05em;
+  color: var(--tx-1);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.nav-brand:hover { color: var(--oxide); }
+.nav-links { display: flex; gap: 6px; }
+.nav-links a {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  text-decoration: none;
+  padding: 7px 12px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.nav-links a:hover { color: var(--tx-1); border-color: var(--line); }
+.nav-links a[aria-current="page"] {
+  color: var(--oxide);
+  border-color: var(--oxide);
+  background: var(--oxide-wash);
+}
+
+/* ---------- big next-page card ---------- */
+
+.pagelink {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px 20px;
+  margin: 56px 0 0;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--oxide);
+  background: var(--g-1);
+  text-decoration: none;
+  color: inherit;
+}
+.pagelink:hover { background: var(--g-2); border-left-width: 6px; }
+.pagelink .k {
+  grid-column: 1;
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--oxide);
+}
+.pagelink .t {
+  grid-column: 1;
+  font-family: var(--f-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: var(--tx-1);
+  line-height: 1.1;
+}
+.pagelink .d {
+  grid-column: 1;
+  font-size: .94rem;
+  color: var(--tx-2);
+  max-width: 56ch;
+}
+.pagelink .arrow {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  font-family: var(--f-display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--oxide);
+  line-height: 1;
+}
+@media (max-width: 520px) {
+  .pagelink { grid-template-columns: 1fr; }
+  .pagelink .arrow { grid-column: 1; grid-row: auto; font-size: 1.5rem; }
+}
+
+/* ---------- masthead ---------- */
+
+.mast {
+  border-bottom: 1px solid var(--line);
+  padding: 56px 0 28px;
+  margin-bottom: 40px;
+}
+.eyebrow {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--oxide);
+  margin: 0 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.eyebrow::before {
+  content: "";
+  width: 28px; height: 2px;
+  background: var(--oxide);
+  flex: none;
+}
+h1 {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(2.6rem, 9vw, 4.6rem);
+  line-height: .94;
+  letter-spacing: -.035em;
+  margin: 0 0 16px;
+  text-wrap: balance;
+}
+.dek {
+  font-size: 1.06rem;
+  color: var(--tx-2);
+  max-width: 62ch;
+  margin: 0;
+}
+.dek strong { color: var(--tx-1); font-weight: 600; }
+
+/* ---------- status board ---------- */
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  background: var(--line-soft);
+  border: 1px solid var(--line-soft);
+  margin: 32px 0 0;
+}
+.cell { background: var(--g-1); padding: 14px 16px; }
+.cell .k {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  display: block;
+  margin-bottom: 6px;
+}
+.cell .v {
+  font-family: var(--f-display);
+  font-size: 1.22rem;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums;
+}
+.cell .v.ok   { color: var(--verdigris); }
+.cell .v.warn { color: var(--sodium); }
+
+/* ---------- section headings ---------- */
+
+h2 {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 1.6rem;
+  letter-spacing: -.02em;
+  margin: 64px 0 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  text-wrap: balance;
+}
+h3 {
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: 1.06rem;
+  letter-spacing: -.005em;
+  margin: 28px 0 10px;
+}
+p { margin: 0 0 14px; max-width: 68ch; }
+a { color: var(--oxide); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--oxide);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ---------- log entries ---------- */
+
+.log { display: flex; flex-direction: column; gap: 0; }
+
+.entry {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: 0 22px;
+  padding: 30px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.entry:last-child { border-bottom: none; }
+
+.seq {
+  font-family: var(--f-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx-3);
+  padding-top: 4px;
+  position: relative;
+}
+.seq::after {
+  content: "";
+  position: absolute;
+  left: 0; top: 30px; bottom: -34px;
+  width: 1px;
+  background: var(--line-soft);
+}
+.entry:last-child .seq::after { display: none; }
+
+.entry-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.entry-head h3 { margin: 0; font-size: 1.16rem; }
+
+.tag {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.tag.done    { color: var(--verdigris); border-color: var(--verdigris); background: var(--verdigris-wash); }
+.tag.running { color: var(--sodium);    border-color: var(--sodium);    background: var(--sodium-wash); }
+.tag.fixed   { color: var(--oxide);     border-color: var(--oxide);     background: var(--oxide-wash); }
+.tag.you     { color: var(--tx-2);      border-color: var(--line);      background: var(--g-2); }
+
+/* ---------- evidence blocks ---------- */
+
+pre {
+  font-family: var(--f-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  background: var(--g-3);
+  border: 1px solid var(--line-soft);
+  border-left: 2px solid var(--tx-3);
+  padding: 13px 15px;
+  margin: 14px 0;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--tx-2);
+}
+pre.bad  { border-left-color: var(--blood); }
+pre.good { border-left-color: var(--verdigris); }
+pre b { color: var(--tx-1); font-weight: 600; }
+pre .hl-bad  { color: var(--blood); font-weight: 600; }
+pre .hl-good { color: var(--verdigris); font-weight: 600; }
+pre .dim { color: var(--tx-3); }
+
+code {
+  font-family: var(--f-mono);
+  font-size: .88em;
+  background: var(--g-3);
+  border: 1px solid var(--line-soft);
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+pre code { background: none; border: none; padding: 0; white-space: pre; }
+
+/* ---------- tables ---------- */
+
+.tw { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line-soft); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 460px; }
+th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line-soft); }
+th {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  font-weight: 500;
+  background: var(--g-1);
+}
+tbody tr:last-child td { border-bottom: none; }
+td.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.ok  { color: var(--verdigris); font-family: var(--f-mono); font-size: 12px; font-weight: 600; }
+
+/* ---------- callout ---------- */
+
+.note {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--oxide);
+  background: var(--g-1);
+  padding: 15px 18px;
+  margin: 18px 0;
+}
+.note .lbl {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--oxide);
+  display: block;
+  margin-bottom: 7px;
+}
+.note p:last-child { margin-bottom: 0; }
+.note.lesson { border-left-color: var(--verdigris); }
+.note.lesson .lbl { color: var(--verdigris); }
+
+/* ---------- story block ---------- */
+
+.acts { display: grid; gap: 1px; background: var(--line-soft); border: 1px solid var(--line-soft); margin: 18px 0; }
+.act { background: var(--g-1); padding: 16px 18px; }
+.act .n {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--oxide);
+  display: block;
+  margin-bottom: 6px;
+}
+.act h4 { font-family: var(--f-display); font-size: 1.02rem; font-weight: 700; margin: 0 0 6px; letter-spacing: -.01em; }
+.act p { margin: 0; font-size: .94rem; color: var(--tx-2); max-width: none; }
+
+/* ---------- checklist ---------- */
+
+ul.check { list-style: none; padding: 0; margin: 16px 0; display: flex; flex-direction: column; gap: 2px; }
+ul.check li {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  align-items: baseline;
+  padding: 7px 10px;
+  background: var(--g-1);
+  border-left: 2px solid var(--line);
+  font-size: .95rem;
+}
+ul.check li::before { font-family: var(--f-mono); font-size: 12px; font-weight: 600; }
+ul.check li.d { border-left-color: var(--verdigris); color: var(--tx-2); }
+ul.check li.d::before { content: "[x]"; color: var(--verdigris); }
+ul.check li.r { border-left-color: var(--sodium); }
+ul.check li.r::before { content: "[~]"; color: var(--sodium); }
+ul.check li.o::before { content: "[ ]"; color: var(--tx-3); }
+ul.check li.y { border-left-color: var(--oxide); }
+ul.check li.y::before { content: "[!]"; color: var(--oxide); }
+
+ul.plain { margin: 12px 0; padding-left: 20px; }
+ul.plain li { margin-bottom: 7px; max-width: 66ch; }
+
+/* ---------- footer ---------- */
+
+.foot {
+  margin-top: 72px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  color: var(--tx-3);
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 620px) {
+  .entry { grid-template-columns: 1fr; gap: 0; }
+  .seq { padding-top: 0; margin-bottom: 8px; }
+  .seq::after { display: none; }
+  .wrap { padding: 0 18px 64px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="nav-brand" href="https://billionaires-game-development-journ.vercel.app/">SEAWALL</a>
+    <div class="nav-links">
+      <a href="https://billionaires-game-development-journ.vercel.app/">Build Log</a>
+      <a href="https://billionaires-game-development-journ.vercel.app/pipeline.html">Workstation</a>
+      <a href="https://billionaires-game-development-journ.vercel.app/handbook.html" aria-current="page">Handbook</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <p class="eyebrow">Seawall &middot; Reference</p>
+    <h1>SURFACE &amp; LIGHT</h1>
+    <p class="dek">
+      How the corridor's material system actually works &mdash; every node, why it exists, and
+      what each of the 42 parameters does. Then the lighting model, so the horror can be tuned
+      without guessing.
+    </p>
+
+    <div class="board">
+      <div class="cell"><span class="k">Master material</span><span class="v">1</span></div>
+      <div class="cell"><span class="k">Instances</span><span class="v">3</span></div>
+      <div class="cell"><span class="k">Parameters</span><span class="v">42</span></div>
+      <div class="cell"><span class="k">Textures used</span><span class="v ok">0</span></div>
+    </div>
+  </header>
+
+  <h2>Part one &mdash; the material</h2>
+
+  <h3>The problem this solves</h3>
+  <p>
+    Every wall, floor and ceiling in the corridor is the same 100&nbsp;cm cube, scaled. A wall
+    scaled 18&times; has its <strong>UVs stretched 18&times;</strong> too &mdash; so any normal
+    texture would smear horribly along the long walls and look correct on the short ones. There is
+    no single texture scale that works.
+  </p>
+  <div class="note lesson">
+    <span class="lbl">The trick the whole material rests on</span>
+    <p><strong>Map by world position instead of UVs.</strong> Every pattern is computed from where
+    a point <em>is in the world</em>, not where it sits on a mesh. A wall scaled 18&times; and a
+    wall scaled 3&times; get identical surface density, automatically. It also means patterns run
+    continuously <em>across</em> separate actors &mdash; the tile grid crosses six separate floor
+    boxes without a seam, because none of them know they are separate.</p>
+  </div>
+
+  <h3>The five nodes that do everything</h3>
+  <p>The whole 42-parameter system is built from five node types repeated. Learn these and the graph stops being mysterious.</p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Node</th><th>Does</th><th>Used for</th></tr></thead>
+      <tbody>
+        <tr><td><code>WorldPosition</code></td><td>Where am I in the world? Outputs <code>XYZ</code>, <code>XY</code> and <code>Z</code> separately</td><td>The input to almost everything. <code>Z</code> drives the dado height and the mould/moss gates</td></tr>
+        <tr><td><code>Noise</code></td><td>Random but continuous values, 0&ndash;1, scattered through space</td><td>Every organic pattern. <code>Scale</code> = feature size, <code>Levels</code> = octaves of fine detail</td></tr>
+        <tr><td><strong><code>SmoothStep</code></strong></td><td><strong>The threshold gate.</strong> See below</td><td>Turning smooth noise into distinct patches</td></tr>
+        <tr><td><code>Lerp</code></td><td>Blend between A and B by a mask</td><td>Every layer sitting on top of the last</td></tr>
+        <tr><td><code>Multiply</code></td><td>Combine masks, darken values</td><td>Stacking conditions: "corner <em>and</em> ceiling <em>and</em> patch"</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>SmoothStep &mdash; the one to actually understand</h3>
+  <pre><b>SmoothStep(Min, Max, Value)</b>
+
+  Value below Min   &rarr;  0     effect OFF here
+  Value above Max   &rarr;  1     effect FULLY ON here
+  in between        &rarr;  smooth fade</pre>
+  <p>Feed it noise and you get patches. Then two moves control everything:</p>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Move</th><th>Result</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Raise <code>Min</code></strong></td><td>Fewer patches</td><td>Higher bar &mdash; only the strongest noise peaks clear it</td></tr>
+        <tr><td>Lower <code>Min</code></td><td>More patches</td><td>Almost everything qualifies</td></tr>
+        <tr><td><strong>Narrow the Min&rarr;Max gap</strong></td><td>Hard, torn edges</td><td>The fade happens over a tiny range</td></tr>
+        <tr><td>Widen the gap</td><td>Soft, faded edges</td><td>The fade is spread out</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    Every <code>...Start</code> / <code>...End</code> pair in the parameter list is one of these.
+    <code>PeelStart</code>/<code>PeelEnd</code>, <code>MouldPatchStart</code>/<code>End</code>,
+    <code>MossPatchStart</code>/<code>End</code>, <code>StreakStart</code>/<code>End</code> &mdash;
+    same node, same two rules, different noise feeding it.
+  </p>
+
+  <h3>The layer stack</h3>
+  <p>Layers paint over each other bottom-up, exactly like real decay accumulates.</p>
+
+  <div class="acts">
+    <div class="act"><span class="n">1 &mdash; Dado</span><h4>The two-tone paint line</h4>
+      <p><code>WorldPosition.Z</code> feeds a SmoothStep between <code>DadoHeightLow</code> and
+      <code>High</code>, then Lerps <code>DadoColor</code> (teal) into <code>UpperColor</code> (bone).
+      Because it reads world height, the paint line sits at the same height on every wall no matter
+      how the box is scaled &mdash; and it falls out for free that the floor (Z&asymp;0) takes the
+      teal and the ceiling (Z&asymp;410) takes the bone.</p></div>
+
+    <div class="act"><span class="n">2 &mdash; Peeling</span><h4>Paint torn away to concrete</h4>
+      <p>Two noises at different scales are <em>multiplied</em> before the SmoothStep. One noise
+      alone gives round repeating blobs; multiplying two gives irregular tears at genuinely
+      different sizes. Underneath, exposed concrete is not one flat colour &mdash;
+      <code>ConcreteColor</code> and <code>ConcreteColorB</code> are mixed by a medium noise to
+      simulate aggregate, then pitted by a fine one.</p></div>
+
+    <div class="act"><span class="n">3 &mdash; Water staining</span><h4>Vertical runs</h4>
+      <p>The trick: <strong>world position is multiplied by (1, 1, 0.06) before sampling the
+      noise</strong>. Squashing the Z axis stretches the noise vertically, turning round blobs into
+      long streaks. Cheapest directional effect there is.</p></div>
+
+    <div class="act"><span class="n">4 &mdash; Mould / blood</span><h4>One layer, two meanings</h4>
+      <p>Height gate (near the floor) &times; large-scale patch gate &times; a detail noise. On
+      <code>MI_Wall</code> it is dark green mould. On <code>MI_Floor</code> the identical layer is
+      recoloured dark red and becomes <strong>blood pools</strong>. Same machine, different paint
+      &mdash; no extra nodes.</p></div>
+
+    <div class="act"><span class="n">5 &mdash; Salt</span><h4>Sea air through concrete</h4>
+      <p>White crystalline bloom near the floor. Specific to an island: salt drives into the
+      structure and pushes back out. Free authenticity nothing inland would have.</p></div>
+
+    <div class="act"><span class="n">6 &mdash; Detail</span><h4>Two octaves of grain</h4>
+      <p>Noise at ~8&nbsp;cm and ~1.5&nbsp;cm multiplied together. Without this the surface reads as
+      soft low-resolution blobs, because the largest features were 1.7&nbsp;m across and there was
+      nothing at close range.</p></div>
+
+    <div class="act"><span class="n">8 &mdash; Tiles</span><h4>Grid from world position</h4>
+      <p><code>frac(worldXY / TileSize)</code> gives position inside each tile. Then
+      <code>f&times;(1&minus;f)</code> per axis peaks mid-tile and hits zero at the seams; multiplying
+      the two axes together gives the grout mask without needing a Min node. Per-tile brightness
+      variation comes from noise sampled at <code>floor(uv)</code> &mdash; constant <em>within</em>
+      a tile, different <em>between</em> tiles.</p></div>
+
+    <div class="act"><span class="n">9 &mdash; Moss</span><h4>Corner-seeking growth</h4>
+      <p>Four masks multiplied: corner proximity (<code>abs(worldY)</code> against a half-width),
+      a height gate, a sparse patch gate, and a dense interior made from six octaves of turbulence
+      raised to a <code>Power</code>. The power curve is what clumps it into cratered knots instead
+      of a smooth wash.</p></div>
+  </div>
+
+  <h3>The principle worth taking to every material</h3>
+  <div class="note">
+    <span class="lbl">One mask, every channel</span>
+    <p>A mask is not "a colour" &mdash; it is <strong>a region</strong>. Once built, feed it into
+    everything that should change there. Blood is not just red: it is red <em>and</em> glossier.
+    Exposed concrete is not just grey: it is grey <em>and</em> rougher than the paint. Moss is
+    green <em>and</em> dead matte.</p>
+    <p>Roughness is therefore a four-stage chain, in the same order as the colour:</p>
+  </div>
+  <pre>1. paint      Lerp(RoughnessMin, RoughnessMax, grime) &times; micro-noise
+2. concrete   ...overridden by ConcreteRoughness where paint has peeled
+3. blood/mould ...overridden by MouldRoughness on top of that
+4. moss/grout ...overridden again where those masks apply</pre>
+  <p>Blood sitting on exposed concrete takes the blood's finish, not the concrete's &mdash; because
+  it is physically the topmost thing at that point.</p>
+
+  <h2>Master material vs instances</h2>
+  <div class="tw">
+    <table>
+      <thead><tr><th></th><th><code>M_Concrete_Master</code></th><th><code>MI_Wall</code> / <code>MI_Floor</code> / <code>MI_Ceiling</code></th></tr></thead>
+      <tbody>
+        <tr><td>Holds</td><td>The logic &mdash; the node graph</td><td>Only parameter <em>values</em></td></tr>
+        <tr><td>Editing costs</td><td><strong>A full shader recompile</strong> &mdash; slow</td><td>Nothing. Applies live as you drag</td></tr>
+        <tr><td>Edit when</td><td>Adding a new kind of effect</td><td>Everything else</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    This is why one material can produce three completely different surfaces. Rebuilding the master
+    does <strong>not</strong> lose instance tuning &mdash; overrides are stored <em>by parameter
+    name</em>, so as long as names are kept, values survive.
+  </p>
+  <p>
+    Applying them needed a workaround: neither <code>overrideMaterials</code> nor
+    <code>staticMesh</code> is settable on an existing component in this build, so each surface role
+    gets its own blockout mesh asset (<code>SM_Blockout_Wall</code> / <code>_Floor</code> /
+    <code>_Ceiling</code>) carrying its instance.
+  </p>
+
+  <h2>Three bugs that cost real time</h2>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>Mirror floor, black colours, per-pixel stipple &mdash; <em>and</em> lighting that would not change</td><td><code>set_properties</code> takes <code>values</code> as a <strong>JSON string</strong>, not an object. Passing an object returned <code>true</code> and wrote nothing</td><td><code>json.dumps()</code> the dict. Found by setting a light to 1234 and reading back 8</td></tr>
+        <tr><td>Power node refused to connect</td><td>Its inputs are <code>Base</code> / <code>Exp</code></td><td>Not "Exponent"</td></tr>
+        <tr><td>AppendVector rejected a constant</td><td>It has no <code>constB</code></td><td>Wire a real Constant node</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note lesson">
+    <span class="lbl">The lesson</span>
+    <p>A tool returning success is not evidence it worked. <strong>Read the value back.</strong>
+    Hours were spent tuning lights that were never changing.</p>
+  </div>
+
+  <h2>Part two &mdash; lighting</h2>
+
+  <h3>The four things that make a room dark</h3>
+  <p>Darkness is not one setting. Four systems each brighten a scene, and any one left wrong keeps it lit.</p>
+  <div class="tw">
+    <table>
+      <thead><tr><th>#</th><th>System</th><th>Where</th><th>Now</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td><td><strong>Exposure</strong></td><td><code>PP_Corridor</code> &rarr; Exposure Compensation</td><td class="num">4.5</td></tr>
+        <tr><td class="num">2</td><td><strong>Surface albedo</strong></td><td>The material's colours</td><td>~0.05&ndash;0.2</td></tr>
+        <tr><td class="num">3</td><td><strong>Ambient</strong></td><td><code>SkyLight</code> intensity</td><td class="num">0.05</td></tr>
+        <tr><td class="num">4</td><td><strong>Lights</strong></td><td><code>PL_Corridor_01/02/03</code></td><td>2200 lm</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">
+    <span class="lbl">The one most people miss</span>
+    <p><strong>Auto-exposure.</strong> Left on, Unreal watches the screen and brightens whatever it
+    sees &mdash; so every dark room is quietly lifted back to mid-grey and nothing you do to the
+    lights survives. It is <em>locked to manual</em> here on purpose. If the corridor ever refuses
+    to go dark, check this first.</p>
+  </div>
+
+  <h3>Light units</h3>
+  <pre>Intensity is in <b>lumens</b> when inverse-squared falloff is on.
+
+    1700 lm  =  a 100W bulb
+    2200 lm  =  our corridor lamps -- bright, but tiny reach
+     400 lm  =  a dying emergency light</pre>
+  <p>
+    <strong>Attenuation Radius is the more important dial.</strong> It is a hard cutoff, in
+    centimetres. Ours is 560&nbsp;cm on lamps roughly 900&nbsp;cm apart &mdash; so the pools do
+    <em>not</em> touch, and genuine darkness sits between them. That gap is the horror. A corridor
+    lit evenly end to end is a corridor with nowhere to hide.
+  </p>
+
+  <h3>Colour temperature is free tension</h3>
+  <p>
+    Lamps are warm amber (255, 168, 96) against teal-green walls &mdash; near-opposites on the colour
+    wheel. Warm pool, cold shadow. That contrast does more for atmosphere than any amount of extra
+    geometry, and it costs nothing.
+  </p>
+
+  <h3>Volumetric fog</h3>
+  <p>
+    Fog is what makes light <em>visible in the air</em> rather than only on surfaces &mdash; the
+    shaft under a lamp, the way a distant light glows before you reach it.
+  </p>
+  <div class="tw">
+    <table>
+      <thead><tr><th>On</th><th>Setting</th><th>Now</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td>ExponentialHeightFog</td><td>Fog Density</td><td class="num">0.035</td><td>Interiors want tiny values. 0.6 whited the corridor out completely</td></tr>
+        <tr><td></td><td>Fog Height Falloff</td><td class="num">0.04</td><td>Kept low so fog is even, not pooled at the floor</td></tr>
+        <tr><td></td><td>Volumetric Fog</td><td>on</td><td>Without this, fog is a flat screen filter</td></tr>
+        <tr><td>Each light</td><td>Volumetric Scattering Intensity</td><td class="num">2.2</td><td>How much <em>that</em> light shows in the air</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">
+    <span class="lbl">The gotcha that wasted a pass</span>
+    <p>The fog actor started at <code>z = &minus;6850</code>. With height falloff, density decays
+    exponentially with height &mdash; so at corridor level there was effectively <strong>zero
+    fog</strong> and no setting had any visible effect. <strong>Move the fog actor to your play
+    space before touching its numbers.</strong></p>
+  </div>
+
+  <h3>Shadows are the expensive part</h3>
+  <p>
+    Every shadow-casting light is a full extra render pass. In a dark game the temptation is dozens
+    of small lights &mdash; that is exactly how a horror project ends at 22fps. Keep very few casting
+    shadows: the torch, and the one or two lamps whose shadows tell the player something.
+  </p>
+
+  <h3>Where to start tuning</h3>
+  <ul class="check">
+    <li class="o"><strong>Exposure Compensation</strong> on <code>PP_Corridor</code> &mdash; the master brightness. Everything else is relative to it</li>
+    <li class="o"><strong>Attenuation Radius</strong> before Intensity &mdash; controls where darkness lives, which matters more than how bright the light is</li>
+    <li class="o"><strong>One light at a time.</strong> Solo a lamp by dropping the others to 0, get it right, then bring them back</li>
+    <li class="o"><strong>Light Color</strong> &mdash; a sickly green or sodium orange changes the whole read of a space in one drag</li>
+    <li class="o"><strong>Fog Density</strong> last &mdash; it interacts with everything, so tune it once the lights are settled</li>
+  </ul>
+
+  <div class="note lesson">
+    <span class="lbl">The rule for horror lighting</span>
+    <p>Light <strong>a few things brightly</strong> and leave everything else genuinely black. The
+    instinct is to add lights until you can see &mdash; resist it. The player should be straining to
+    make out shapes at the edge of a pool of light. What they cannot quite see is doing the work.</p>
+  </div>
+
+  <a class="pagelink" href="https://billionaires-game-development-journ.vercel.app/">
+    <span class="k">Back to</span>
+    <span class="t">The Build Log</span>
+    <span class="d">The running record of every session &mdash; decisions, engineering, and what broke.</span>
+    <span class="arrow" aria-hidden="true">&larr;</span>
+  </a>
+
+  <div class="foot">
+    <span>SEAWALL &middot; surface &amp; light</span>
+    <span>Session 02 &middot; 6 Sep 2026</span>
+  </div>
+
+</div>
