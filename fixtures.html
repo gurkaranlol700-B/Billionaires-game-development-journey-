@@ -1,0 +1,887 @@
+<title>From Prompt to Fixture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* ==========================================================================
+   SEAWALL BUILD LOG
+   Dark-first: bare :root carries the complete dark palette, light overrides
+   under prefers-color-scheme:light and [data-theme="light"].
+   Palette is Gunkanjima -- wet concrete, sea dark, oxide rust on rebar.
+   ========================================================================== */
+
+:root {
+  /* grounds */
+  --g-0:  #0B0F11;   /* page ground -- sea-dark, blue-green cast */
+  --g-1:  #12181B;   /* raised surface */
+  --g-2:  #1A2226;   /* card */
+  --g-3:  #232D32;   /* inset / code */
+  --line: #2C383E;
+  --line-soft: #202A2F;
+
+  /* text */
+  --tx-1: #E4E9EA;   /* primary */
+  --tx-2: #A3B0B4;   /* secondary */
+  --tx-3: #6E7F85;   /* tertiary / labels */
+
+  /* accent + semantic */
+  --oxide:     #C05F32;   /* THE accent -- rust bleeding through concrete */
+  --oxide-dim: #8E4626;
+  --oxide-wash:#2A1912;
+  --verdigris: #5A9B85;   /* done */
+  --verdigris-wash:#132420;
+  --sodium:    #D9A441;   /* in progress / pending */
+  --sodium-wash:#241C0E;
+  --blood:     #C4483F;   /* blocked / failed */
+  --blood-wash:#26120F;
+
+  --shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 24px -12px rgba(0,0,0,.7);
+
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --g-0:  #E7E9E7;
+    --g-1:  #F1F2F0;
+    --g-2:  #FAFAF9;
+    --g-3:  #E4E7E5;
+    --line: #C9CFCC;
+    --line-soft: #DBE0DD;
+    --tx-1: #131A1C;
+    --tx-2: #4A585C;
+    --tx-3: #6E7F85;
+    --oxide:     #9C4520;
+    --oxide-dim: #C05F32;
+    --oxide-wash:#F6E7DF;
+    --verdigris: #2F6B57;
+    --verdigris-wash:#E0EDE8;
+    --sodium:    #8A6212;
+    --sodium-wash:#F5EBD6;
+    --blood:     #A32E26;
+    --blood-wash:#F7E2E0;
+    --shadow: 0 1px 2px rgba(19,26,28,.06), 0 8px 24px -14px rgba(19,26,28,.22);
+  }
+}
+
+:root[data-theme="light"] {
+  --g-0:  #E7E9E7;
+  --g-1:  #F1F2F0;
+  --g-2:  #FAFAF9;
+  --g-3:  #E4E7E5;
+  --line: #C9CFCC;
+  --line-soft: #DBE0DD;
+  --tx-1: #131A1C;
+  --tx-2: #4A585C;
+  --tx-3: #6E7F85;
+  --oxide:     #9C4520;
+  --oxide-dim: #C05F32;
+  --oxide-wash:#F6E7DF;
+  --verdigris: #2F6B57;
+  --verdigris-wash:#E0EDE8;
+  --sodium:    #8A6212;
+  --sodium-wash:#F5EBD6;
+  --blood:     #A32E26;
+  --blood-wash:#F7E2E0;
+  --shadow: 0 1px 2px rgba(19,26,28,.06), 0 8px 24px -14px rgba(19,26,28,.22);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--g-0);
+  color: var(--tx-1);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: 900px; margin: 0 auto; padding: 0 24px 96px; }
+
+/* ---------- sticky top navigation ---------- */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  /* Opaque, from a token -- a transparent bar would let text scroll through it. */
+  background: var(--g-0);
+  border-bottom: 1px solid var(--line);
+}
+.nav-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 24px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.nav-brand {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 1.02rem;
+  letter-spacing: .05em;
+  color: var(--tx-1);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.nav-brand:hover { color: var(--oxide); }
+.nav-links { display: flex; gap: 6px; }
+.nav-links a {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  text-decoration: none;
+  padding: 7px 12px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.nav-links a:hover { color: var(--tx-1); border-color: var(--line); }
+.nav-links a[aria-current="page"] {
+  color: var(--oxide);
+  border-color: var(--oxide);
+  background: var(--oxide-wash);
+}
+
+/* ---------- big next-page card ---------- */
+
+.pagelink {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px 20px;
+  margin: 56px 0 0;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--oxide);
+  background: var(--g-1);
+  text-decoration: none;
+  color: inherit;
+}
+.pagelink:hover { background: var(--g-2); border-left-width: 6px; }
+.pagelink .k {
+  grid-column: 1;
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--oxide);
+}
+.pagelink .t {
+  grid-column: 1;
+  font-family: var(--f-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: var(--tx-1);
+  line-height: 1.1;
+}
+.pagelink .d {
+  grid-column: 1;
+  font-size: .94rem;
+  color: var(--tx-2);
+  max-width: 56ch;
+}
+.pagelink .arrow {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  font-family: var(--f-display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--oxide);
+  line-height: 1;
+}
+@media (max-width: 520px) {
+  .pagelink { grid-template-columns: 1fr; }
+  .pagelink .arrow { grid-column: 1; grid-row: auto; font-size: 1.5rem; }
+}
+
+/* ---------- masthead ---------- */
+
+.mast {
+  border-bottom: 1px solid var(--line);
+  padding: 56px 0 28px;
+  margin-bottom: 40px;
+}
+.eyebrow {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--oxide);
+  margin: 0 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.eyebrow::before {
+  content: "";
+  width: 28px; height: 2px;
+  background: var(--oxide);
+  flex: none;
+}
+h1 {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(2.6rem, 9vw, 4.6rem);
+  line-height: .94;
+  letter-spacing: -.035em;
+  margin: 0 0 16px;
+  text-wrap: balance;
+}
+.dek {
+  font-size: 1.06rem;
+  color: var(--tx-2);
+  max-width: 62ch;
+  margin: 0;
+}
+.dek strong { color: var(--tx-1); font-weight: 600; }
+
+/* ---------- status board ---------- */
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  background: var(--line-soft);
+  border: 1px solid var(--line-soft);
+  margin: 32px 0 0;
+}
+.cell { background: var(--g-1); padding: 14px 16px; }
+.cell .k {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  display: block;
+  margin-bottom: 6px;
+}
+.cell .v {
+  font-family: var(--f-display);
+  font-size: 1.22rem;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums;
+}
+.cell .v.ok   { color: var(--verdigris); }
+.cell .v.warn { color: var(--sodium); }
+
+/* ---------- section headings ---------- */
+
+h2 {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 1.6rem;
+  letter-spacing: -.02em;
+  margin: 64px 0 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  text-wrap: balance;
+}
+h3 {
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: 1.06rem;
+  letter-spacing: -.005em;
+  margin: 28px 0 10px;
+}
+p { margin: 0 0 14px; max-width: 68ch; }
+a { color: var(--oxide); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--oxide);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ---------- log entries ---------- */
+
+.log { display: flex; flex-direction: column; gap: 0; }
+
+.entry {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: 0 22px;
+  padding: 30px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.entry:last-child { border-bottom: none; }
+
+.seq {
+  font-family: var(--f-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx-3);
+  padding-top: 4px;
+  position: relative;
+}
+.seq::after {
+  content: "";
+  position: absolute;
+  left: 0; top: 30px; bottom: -34px;
+  width: 1px;
+  background: var(--line-soft);
+}
+.entry:last-child .seq::after { display: none; }
+
+.entry-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.entry-head h3 { margin: 0; font-size: 1.16rem; }
+
+.tag {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.tag.done    { color: var(--verdigris); border-color: var(--verdigris); background: var(--verdigris-wash); }
+.tag.running { color: var(--sodium);    border-color: var(--sodium);    background: var(--sodium-wash); }
+.tag.fixed   { color: var(--oxide);     border-color: var(--oxide);     background: var(--oxide-wash); }
+.tag.you     { color: var(--tx-2);      border-color: var(--line);      background: var(--g-2); }
+
+/* ---------- evidence blocks ---------- */
+
+pre {
+  font-family: var(--f-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  background: var(--g-3);
+  border: 1px solid var(--line-soft);
+  border-left: 2px solid var(--tx-3);
+  padding: 13px 15px;
+  margin: 14px 0;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--tx-2);
+}
+pre.bad  { border-left-color: var(--blood); }
+pre.good { border-left-color: var(--verdigris); }
+pre b { color: var(--tx-1); font-weight: 600; }
+pre .hl-bad  { color: var(--blood); font-weight: 600; }
+pre .hl-good { color: var(--verdigris); font-weight: 600; }
+pre .dim { color: var(--tx-3); }
+
+code {
+  font-family: var(--f-mono);
+  font-size: .88em;
+  background: var(--g-3);
+  border: 1px solid var(--line-soft);
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+pre code { background: none; border: none; padding: 0; white-space: pre; }
+
+/* ---------- tables ---------- */
+
+.tw { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line-soft); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 460px; }
+th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line-soft); }
+th {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  font-weight: 500;
+  background: var(--g-1);
+}
+tbody tr:last-child td { border-bottom: none; }
+td.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.ok  { color: var(--verdigris); font-family: var(--f-mono); font-size: 12px; font-weight: 600; }
+
+/* ---------- callout ---------- */
+
+.note {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--oxide);
+  background: var(--g-1);
+  padding: 15px 18px;
+  margin: 18px 0;
+}
+.note .lbl {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--oxide);
+  display: block;
+  margin-bottom: 7px;
+}
+.note p:last-child { margin-bottom: 0; }
+.note.lesson { border-left-color: var(--verdigris); }
+.note.lesson .lbl { color: var(--verdigris); }
+
+/* ---------- story block ---------- */
+
+.acts { display: grid; gap: 1px; background: var(--line-soft); border: 1px solid var(--line-soft); margin: 18px 0; }
+.act { background: var(--g-1); padding: 16px 18px; }
+.act .n {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--oxide);
+  display: block;
+  margin-bottom: 6px;
+}
+.act h4 { font-family: var(--f-display); font-size: 1.02rem; font-weight: 700; margin: 0 0 6px; letter-spacing: -.01em; }
+.act p { margin: 0; font-size: .94rem; color: var(--tx-2); max-width: none; }
+
+/* ---------- checklist ---------- */
+
+ul.check { list-style: none; padding: 0; margin: 16px 0; display: flex; flex-direction: column; gap: 2px; }
+ul.check li {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  align-items: baseline;
+  padding: 7px 10px;
+  background: var(--g-1);
+  border-left: 2px solid var(--line);
+  font-size: .95rem;
+}
+ul.check li::before { font-family: var(--f-mono); font-size: 12px; font-weight: 600; }
+ul.check li.d { border-left-color: var(--verdigris); color: var(--tx-2); }
+ul.check li.d::before { content: "[x]"; color: var(--verdigris); }
+ul.check li.r { border-left-color: var(--sodium); }
+ul.check li.r::before { content: "[~]"; color: var(--sodium); }
+ul.check li.o::before { content: "[ ]"; color: var(--tx-3); }
+ul.check li.y { border-left-color: var(--oxide); }
+ul.check li.y::before { content: "[!]"; color: var(--oxide); }
+
+ul.plain { margin: 12px 0; padding-left: 20px; }
+ul.plain li { margin-bottom: 7px; max-width: 66ch; }
+
+/* ---------- footer ---------- */
+
+.foot {
+  margin-top: 72px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  color: var(--tx-3);
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 620px) {
+  .entry { grid-template-columns: 1fr; gap: 0; }
+  .seq { padding-top: 0; margin-bottom: 8px; }
+  .seq::after { display: none; }
+  .wrap { padding: 0 18px 64px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="nav-brand" href="https://billionaires-game-development-journ.vercel.app/">SEAWALL</a>
+    <div class="nav-links">
+      <a href="https://billionaires-game-development-journ.vercel.app/">Build Log</a>
+      <a href="https://billionaires-game-development-journ.vercel.app/pipeline.html">Workstation</a>
+      <a href="https://billionaires-game-development-journ.vercel.app/handbook.html">Handbook</a>
+      <a href="https://billionaires-game-development-journ.vercel.app/fixtures.html" aria-current="page">Fixtures</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <p class="eyebrow">Seawall &middot; Session 03</p>
+    <h1>FROM PROMPT TO FIXTURE</h1>
+    <p class="dek">
+      An AI image becomes a sculpt, a sculpt becomes a game asset, and a game asset becomes a light
+      that actually lights the corridor. Every step, including the four that broke &mdash; and the
+      arithmetic that explains why a &ldquo;working&rdquo; emissive material rendered as dead grey plastic.
+    </p>
+
+    <div class="board">
+      <div class="cell"><span class="k">Generated</span><span class="v">7</span></div>
+      <div class="cell"><span class="k">Shipped</span><span class="v">2</span></div>
+      <div class="cell"><span class="k">Tris after cleanup</span><span class="v">35k / 40k</span></div>
+      <div class="cell"><span class="k">Baked maps</span><span class="v ok">8</span></div>
+    </div>
+  </header>
+
+  <h2>Part one &mdash; making the models</h2>
+
+  <h3>The argument I lost, and should have</h3>
+  <p>
+    I pushed back on using ComfyUI for hard-surface props. The reasoning was reasonable and the
+    conclusion was wrong: image-to-3D is bad at <em>precise</em> hard surfaces &mdash; screw threads,
+    panel gaps, clean bevels &mdash; but a fifty-year-old light fitting rotting on an abandoned island
+    is not a precise hard surface. It is a dented, corroded, half-collapsed one. That is exactly what
+    these models are good at.
+  </p>
+  <div class="note lesson">
+    <span class="lbl">Lesson</span>
+    <p>&ldquo;This tool is weak at hard-surface&rdquo; was a real limitation applied to the wrong
+    object. The asset we needed was defined by its <em>damage</em>, and damage is the thing generative
+    models produce most convincingly. Check that a general rule actually applies to the specific case
+    before leaning on it.</p>
+  </div>
+
+  <h3>The pipeline</h3>
+  <p>
+    Flux renders a product-shot concept, Hunyuan3D turns that single image into a mesh. The prompt
+    conditions matter more than the subject description &mdash; every generation used the same frame:
+  </p>
+  <pre class="good">a single old ceiling-mounted fluorescent light fixture, ...
+<span class="hl-good">three quarter view, whole object fully visible,
+plain flat light grey background, soft even studio lighting,
+product photograph, sharp focus</span></pre>
+  <p>
+    That second half is doing the work. Image-to-3D reconstructs what it can see, so a flat grey
+    background with no cast shadows and the whole silhouette in frame is the difference between a
+    clean mesh and a puddle. The negative prompt bans the things that quietly ruin it &mdash;
+    <code>collage, grid, multiple objects, cropped, dramatic lighting, hard shadows</code>.
+  </p>
+
+  <h3>What you actually get back</h3>
+  <p>Seven models, ~80 seconds each. Then the reality check:</p>
+  <pre class="bad">glTF version 2   size 1907 KB
+meshes: 1     materials: <span class="hl-bad">0 []</span>     images/textures: <span class="hl-bad">0 / 0</span>
+prim attrs: <span class="hl-bad">['POSITION']</span>
+TRIANGLES: 107,840   VERTS: 53,322</pre>
+  <p>
+    <code>POSITION</code> and nothing else. No UVs, no normals, no materials &mdash; a raw sculpt.
+    It is not an asset, it is the <em>starting point</em> for one. Everything below is the work of
+    turning it into something Unreal can use.
+  </p>
+
+  <h2>Part two &mdash; the Blender pass</h2>
+
+  <div class="log">
+
+    <div class="entry">
+      <div class="seq">1</div>
+      <div>
+        <div class="entry-head"><h3>Orientation, and a silent no-op</h3><span class="tag fixed">Fixed</span></div>
+        <p>
+          The ceiling panel imported standing on its end. Setting a rotation and applying it did
+          nothing at all &mdash; twice &mdash; and the script reported success both times.
+        </p>
+        <pre class="bad">dim_before: [0.79, 0.245, 1.966]
+dim_after:  [0.79, 0.245, 1.966]   <span class="hl-bad">rotated: true</span></pre>
+        <p>
+          The cause: <strong>the glTF importer sets <code>rotation_mode = 'QUATERNION'</code></strong>.
+          Assigning <code>obj.rotation_euler</code> on a quaternion object is ignored without error.
+          The fix is to stop asking the object nicely and transform the mesh data directly:
+        </p>
+        <pre class="good">obj.data.transform(obj.matrix_world)      <span class="dim"># bake existing transform</span>
+obj.matrix_world = Matrix.Identity(4)
+obj.data.transform(Matrix.Rotation(rz,4,'Z')
+                 @ Matrix.Rotation(rx,4,'X'))
+<span class="hl-good">dim_after: [1.966, 0.79, 0.245]</span></pre>
+        <div class="note lesson">
+          <span class="lbl">Lesson</span>
+          <p>Same shape as the <code>set_properties</code> bug from Session 01: an API that accepts
+          your input, returns success, and changes nothing. <strong>Read the value back.</strong>
+          Twice now this has been the thing that caught it.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="entry">
+      <div class="seq">2</div>
+      <div>
+        <div class="entry-head"><h3>Splitting the glass from the housing</h3><span class="tag done">Solved</span></div>
+        <p>
+          A light needs two materials &mdash; dark rusted metal, and a lens that emits. The mesh
+          arrives as one undifferentiated blob, so the lens faces have to be identified
+          geometrically. The obvious approach is a positional test: <em>faces pointing down, inside
+          an inset rectangle</em>. It half-works and looks terrible:
+        </p>
+        <pre class="bad">boundary tears straight through triangles
+&mdash; ragged, stepped edge along the whole rim</pre>
+        <p>
+          Because a threshold on position knows nothing about the shape. The fix is to let the
+          <strong>geometry define its own boundary</strong>: start from one face in the middle of the
+          lens and grow outward across shared edges, refusing to cross any edge where the two faces
+          meet at a sharp angle. The rim <em>is</em> a sharp angle, so the fill stops there exactly.
+        </p>
+        <pre class="good">for e in f.edges:
+    if e.calc_face_angle() &gt; radians(22):
+        continue        <span class="dim"># sharp edge = the rim, do not cross</span>
+    ...grow into e.link_faces</pre>
+        <div class="note">
+          <span class="lbl">Why this is the right tool</span>
+          <p>It is the same idea as &ldquo;select linked flat&rdquo; in the Blender UI, done in
+          script. A positional test asks <em>where is this face</em>; a flood fill asks <em>is this
+          face part of the same surface</em>. For anything bounded by a crease, the second question
+          is the one that gives clean results.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="entry">
+      <div class="seq">3</div>
+      <div>
+        <div class="entry-head"><h3>Pivots that make placement free</h3><span class="tag done">Done</span></div>
+        <p>
+          A prop's origin decides how painful it is to place. Both fixtures got their pivot moved
+          onto the surface that touches the building:
+        </p>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Asset</th><th>Pivot</th><th>Result in Unreal</th></tr></thead>
+            <tbody>
+              <tr><td>Ceiling panel</td><td>centre of the <strong>top</strong> face</td><td>Set Z = ceiling height. Done. No nudging.</td></tr>
+              <tr><td>Corner lamp</td><td>centre of the <strong>back</strong> plate</td><td>Set X = wall position. Sits flush.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Verified after import by reading the bounds back out of Unreal, not by looking at it:</p>
+        <pre class="good">panel  z: -24.51 &rarr; <span class="hl-good">0.000006</span>   <span class="dim"># top face exactly at origin</span>
+lamp   x: <span class="hl-good">0</span> &rarr; 76.90          <span class="dim"># back plate exactly at origin</span></pre>
+      </div>
+    </div>
+
+    <div class="entry">
+      <div class="seq">4</div>
+      <div>
+        <div class="entry-head"><h3>Weathering, and why it had to be baked</h3><span class="tag done">Done</span></div>
+        <p>
+          The housings are painted steel that has been losing an argument with sea air for fifty
+          years. Built procedurally: a low-frequency noise decides <em>where</em> corrosion takes
+          hold, a higher-frequency noise decides its texture inside those regions, and
+          <code>Pointiness</code> exposes bare metal along worn edges.
+        </p>
+        <div class="note">
+          <span class="lbl">The multiply that made it look real</span>
+          <p>First attempt applied rust everywhere the fine noise fired &mdash; a uniform orange coat
+          that read as plastic. Multiplying the rust mask by a much larger-scale region mask
+          (<code>scale 1.15</code>) means corrosion appears in <em>patches</em>, with original paint
+          surviving between them. Real decay is patchy; uniform decay reads as a texture, not a
+          history.</p>
+        </div>
+        <p>
+          None of which survives export. <strong>FBX cannot carry Blender's node graph</strong>
+          &mdash; it carries geometry, UVs and material <em>slots</em>. Ship the FBX alone and Unreal
+          shows grey. So every procedural layer gets baked down to flat image maps: BaseColor,
+          Roughness, Normal, Emissive, at 2048&times;2048.
+        </p>
+      </div>
+    </div>
+
+    <div class="entry">
+      <div class="seq">5</div>
+      <div>
+        <div class="entry-head"><h3>The normal map that baked to nothing</h3><span class="tag fixed">Fixed</span></div>
+        <p>
+          The bake reported success and produced a file that looked, at thumbnail size, like a normal
+          map should &mdash; flat lavender. Measuring it instead of trusting it:
+        </p>
+        <pre class="bad">Panel_01  R min 119 max 139 <span class="hl-bad">sd 0.37</span>
+Panel_01  G min 118 max 136 <span class="hl-bad">sd 0.29</span></pre>
+        <p>
+          A neutral normal is 128. Deviating by less than half a value out of 255 is not surface
+          detail, it is rounding noise. The bump feeding the bake was far too weak to register.
+          After raising strength to 1.0 and distance to 0.42, and giving it a higher-contrast height
+          source:
+        </p>
+        <pre class="good">Panel_01  R min 22 max 235 <span class="hl-good">sd 36.36</span>
+Lamp_01   R min 23 max 232 <span class="hl-good">sd 27.44</span></pre>
+        <div class="note lesson">
+          <span class="lbl">Lesson</span>
+          <p>&ldquo;It looks about right&rdquo; is not verification for a data texture. A flat normal
+          map and a subtle normal map are visually identical at a glance and completely different in
+          engine. Two numbers &mdash; min/max range and standard deviation &mdash; settle it in
+          seconds.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <h2>Part three &mdash; into Unreal</h2>
+
+  <h3>The import trap nobody warns you about</h3>
+  <p>
+    Unreal guesses texture settings from the filename. It got the normal maps right and both data
+    masks wrong:
+  </p>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Texture</th><th>Unreal chose</th><th>Correct</th></tr></thead>
+      <tbody>
+        <tr><td><code>_Normal</code></td><td>TC_Normalmap, sRGB off</td><td>Right</td></tr>
+        <tr><td><code>_Roughness</code></td><td>TC_Default, <strong>sRGB on</strong></td><td>TC_Masks, sRGB <strong>off</strong></td></tr>
+        <tr><td><code>_Emissive</code></td><td>TC_Default, <strong>sRGB on</strong></td><td>TC_Masks, sRGB <strong>off</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">
+    <span class="lbl">Why sRGB on a roughness map is wrong</span>
+    <p>sRGB is a curve for <em>colour</em> &mdash; it encodes brightness the way an eye perceives it.
+    Roughness is not a colour, it is a number. Decoding it through the sRGB curve bends every value:
+    a stored 0.5 arrives at the shader as roughly 0.21. The surface silently becomes far glossier
+    than authored, everywhere.</p>
+  </div>
+
+  <h3>Master material, then instances</h3>
+  <p>
+    Two masters, four instances. The masters hold the graph; the instances hold nothing but
+    parameter values, so changing a value costs no shader recompile.
+  </p>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Master</th><th>Parameters</th><th>Instances</th></tr></thead>
+      <tbody>
+        <tr><td><code>M_Fixture_Housing</code></td><td>BaseColor, Roughness, Normal, Metallic</td><td>MI_Panel_Housing, MI_Lamp_Housing</td></tr>
+        <tr><td><code>M_Fixture_Glass</code></td><td>EmissiveColor, EmissiveIntensity, GlassBaseColor, GlassRoughness</td><td>MI_Panel_Glass, MI_Lamp_Glass</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Part four &mdash; the light that would not glow</h2>
+
+  <p>
+    The panel was in the level, materials assigned, emissive wired, and it rendered as a slab of dead
+    grey plastic. The graph checked out &mdash; <code>MP_EmissiveColor</code> was driven by
+    <code>Multiply(Multiply(mask, EmissiveColor), Intensity)</code> exactly as authored. Nothing was
+    broken. The number was simply wrong by a factor of sixty, and the reason is in the post-process
+    volume:
+  </p>
+  <pre class="bad">autoExposureMethod: AEM_Manual
+autoExposureBias: 3.9
+<span class="hl-bad">autoExposureApplyPhysicalCameraExposure: true</span>
+cameraShutterSpeed: 60   cameraISO: 100   depthOfFieldFstop: 4</pre>
+  <p>
+    That last flag is the one that matters. With it on, the physical camera settings apply on top of
+    the manual exposure. ISO&nbsp;100 at 1/60s and f/4 is a bright-daylight exposure &mdash; roughly
+    <strong>&minus;10&nbsp;EV</strong> &mdash; and the +3.9 bias only claws part of it back. Net,
+    scene values reach the screen multiplied by about <strong>0.0156</strong>.
+  </p>
+  <pre class="bad">emissive 7  &times; 0.0156  =  <span class="hl-bad">0.11 on screen</span>   &mdash; dead grey</pre>
+  <pre class="good">emissive 140 &times; 0.0156  =  <span class="hl-good">2.18 on screen</span>   &mdash; glows, blooms</pre>
+
+  <div class="note lesson">
+    <span class="lbl">There is no universal &ldquo;correct&rdquo; emissive value</span>
+    <p>An emissive of 7 is bright in one project and invisible in another. The number only means
+    something <em>relative to the exposure the scene is graded at</em>. Before hunting for a bug in a
+    material, read the post-process volume &mdash; the answer is usually there, and it is arithmetic
+    rather than a fault.</p>
+  </div>
+
+  <h3>Why 420 glowed but came out white</h3>
+  <p>
+    Overshooting produced a light that worked and had lost all its warmth. At intensity 420 with a
+    warm tint, every channel clears the tonemapper's white point:
+  </p>
+  <pre class="bad">420 &times; (1.00, 0.78, 0.48) &times; 0.0156  =  (6.5, 5.1, 3.1)
+<span class="hl-bad">all three &gt; 1  &rarr;  clips to pure white</span></pre>
+  <pre class="good">140 &times; (1.00, 0.74, 0.40) &times; 0.0156  =  (2.18, 1.62, <span class="hl-good">0.87</span>)
+<span class="hl-good">blue stays under 1  &rarr;  warm core, warm bloom</span></pre>
+  <p>
+    <strong>Colour survives only where at least one channel is below clip.</strong> Push every
+    channel past white and hue is mathematically gone, no matter what tint is set.
+  </p>
+
+  <div class="note">
+    <span class="lbl">The mask that was doing nothing</span>
+    <p>The glass material originally multiplied by a baked emissive mask. But the mask marks the lens
+    faces &mdash; and those faces already have their own material slot. The slot <em>is</em> the mask.
+    It was removed: one less texture sample, one less failure mode, and the whole lens now emits
+    evenly, which is what a diffuser does anyway.</p>
+  </div>
+
+  <h2>Part five &mdash; placement and the room lights</h2>
+
+  <div class="note">
+    <span class="lbl">A fixture is not a light</span>
+    <p>The emissive mesh makes the lamp <em>look</em> lit. It contributes almost nothing to lighting
+    the space. The Rect Light beside it does that job. Both are needed, and they must agree: when the
+    panels went in flush to the ceiling, the existing Rect Lights at z&nbsp;377&ndash;383 ended up
+    <strong>inside</strong> the panel geometry, where the mesh would shadow its own light. They moved
+    to 373.5, just below the emitting face.</p>
+  </div>
+
+  <h3>Dimming a room properly</h3>
+  <p>
+    &ldquo;Too bright&rdquo; is usually three separate problems, and intensity only fixes one of
+    them. A wide, far-reaching soft source stays <em>everywhere</em> however dim you make it:
+  </p>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Dial</th><th>Went</th><th>What it controls</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Intensity</strong></td><td>1900 &rarr; 620</td><td>Raw brightness in candelas. The blunt instrument.</td></tr>
+        <tr><td><strong>Attenuation Radius</strong></td><td>700 &rarr; 430</td><td>How far light reaches before being forced to zero. At 700 the rooms were leaking into the corridor.</td></tr>
+        <tr><td><strong>Barn Door Angle</strong></td><td>88&deg; &rarr; 42&deg;</td><td>Rect-light only. 88&deg; is nearly a full hemisphere &mdash; the panel sprayed every wall. 42&deg; pools it under the fixture.</td></tr>
+        <tr><td><strong>Barn Door Length</strong></td><td>20 &rarr; 22</td><td>How far the flaps extend; shapes how hard that edge falls off.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    Reach for <strong>Intensity</strong> when it is simply too bright, <strong>Attenuation
+    Radius</strong> when light goes where it should not, and <strong>Barn Door Angle</strong> when
+    the walls and corners are lit but you wanted a pool. Never the post-process exposure &mdash;
+    that is global, and drags the whole corridor with it.
+  </p>
+
+  <h2>Where things stand</h2>
+
+  <ul class="check">
+    <li class="d">7 fixtures generated; 2 taken through to shippable assets</li>
+    <li class="d">Geometry cleaned, decimated, UV'd, pivots on the mounting faces</li>
+    <li class="d">Procedural weathering baked to 8 texture maps, verified numerically</li>
+    <li class="d">Imported with scale, orientation and pivots confirmed against Unreal's own bounds</li>
+    <li class="d">Two master materials, four instances, all dials exposed</li>
+    <li class="d">7 panels and 1 corner lamp placed; 16 blockout placeholders retired</li>
+    <li class="d">Corridor and room lighting rebuilt around the real fixtures, warm-tinted</li>
+    <li class="o">The wall/room tube role is unfilled &mdash; that model was cut</li>
+    <li class="o">No performance baseline yet: <code>stat unit</code> has still never been run</li>
+    <li class="o">Fab sign-in still pending &mdash; scanned Megascans normals remain the biggest quality gap</li>
+  </ul>
+
+  <div class="note lesson">
+    <span class="lbl">The thread running through this session</span>
+    <p>Four separate bugs &mdash; the silent rotation, the flat normal bake, the sRGB masks, the dead
+    emissive &mdash; and every one of them reported success. Not one would have been caught by
+    looking at the result and nodding. They were caught by reading a value back and comparing it to
+    what was asked for. That is the whole discipline.</p>
+  </div>
+
+  <a class="pagelink" href="https://billionaires-game-development-journ.vercel.app/handbook.html">
+    <span class="k">Related</span>
+    <span class="t">Surface &amp; Light</span>
+    <span class="d">The corridor's material system &mdash; every node, every parameter, and how the lighting model works.</span>
+    <span class="arrow" aria-hidden="true">&rarr;</span>
+  </a>
+
+  <div class="foot">
+    <span>SEAWALL &middot; from prompt to fixture</span>
+    <span>Session 03 &middot; 7 Sep 2026</span>
+  </div>
+
+</div>

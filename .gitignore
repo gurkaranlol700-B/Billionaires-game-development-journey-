@@ -46,3 +46,12 @@ Config/*Local*.ini
 
 # MCP server virtualenv (recreate with: uv venv .venv && uv pip install mcp pywin32)
 Tools/seawall-mcp/.venv/
+
+# --- Art working files -----------------------------------------------------
+# Preview renders are regenerable working output, not source.
+Art/Preview/
+# Blender's own rollback copies
+*.blend1
+# Superseded intermediate scenes -- Fixtures_Final.blend is the master
+Art/Fixtures.blend
+Art/Fixtures_Working.blend
