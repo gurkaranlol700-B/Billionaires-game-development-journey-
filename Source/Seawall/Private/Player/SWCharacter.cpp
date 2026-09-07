@@ -17,8 +17,8 @@ ASWCharacter::ASWCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	// 34cm radius, 176cm tall standing.
-	GetCapsuleComponent()->InitCapsuleSize(34.f, 88.f);
+	// 34cm radius, 184cm tall standing.
+	GetCapsuleComponent()->InitCapsuleSize(34.f, 92.f);
 
 	UCharacterMovementComponent* Move = GetCharacterMovement();
 	Move->GetNavAgentPropertiesRef().bCanCrouch = true;
@@ -32,8 +32,9 @@ ASWCharacter::ASWCharacter()
 	Move->bUseControllerDesiredRotation = false;
 	Move->bOrientRotationToMovement = false;
 	// Almost no steering once airborne. Falling should feel like falling.
-	Move->AirControl = 0.08f;
-	Move->JumpZVelocity = 380.f;
+	Move->AirControl = AirControlDefault;
+	Move->JumpZVelocity = JumpVelocityWalk;
+	Move->JumpOffJumpZFactor = 0.f;
 
 	bUseControllerRotationYaw = true;
 	bUseControllerRotationPitch = false;
@@ -42,7 +43,10 @@ ASWCharacter::ASWCharacter()
 	// The body hook. Empty on purpose -- see the header.
 	FirstPersonBody = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FirstPersonBody"));
 	FirstPersonBody->SetupAttachment(GetCapsuleComponent());
-	FirstPersonBody->SetRelativeLocation(FVector(0.f, 0.f, -88.f));
+	// Sit the body at the capsule's base. Derived rather than hard-coded so it
+	// cannot silently drift out of sync if the capsule size ever changes.
+	FirstPersonBody->SetRelativeLocation(
+		FVector(0.f, 0.f, -GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight()));
 	FirstPersonBody->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	FirstPersonBody->SetCastShadow(true);
 	FirstPersonBody->bOnlyOwnerSee = true;
@@ -52,7 +56,7 @@ ASWCharacter::ASWCharacter()
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(FirstPersonBody);
 	Camera->bUsePawnControlRotation = true;
-	Camera->SetRelativeLocation(FVector(0.f, 0.f, EyeHeightStanding));
+	Camera->SetRelativeLocation(FVector(0.f, 0.f, 174.f));
 	Camera->SetFieldOfView(BaseFOV);
 
 	Flashlight = CreateDefaultSubobject<USpotLightComponent>(TEXT("Flashlight"));
@@ -133,6 +137,7 @@ void ASWCharacter::BuildFallbackInput()
 	if (!IA_Flashlight) { IA_Flashlight = MakeAction(TEXT("IA_Flashlight"), EInputActionValueType::Boolean); }
 	if (!IA_LeanLeft)   { IA_LeanLeft   = MakeAction(TEXT("IA_LeanLeft"), EInputActionValueType::Boolean); }
 	if (!IA_LeanRight)  { IA_LeanRight  = MakeAction(TEXT("IA_LeanRight"), EInputActionValueType::Boolean); }
+	if (!IA_Jump)       { IA_Jump       = MakeAction(TEXT("IA_Jump"), EInputActionValueType::Boolean); }
 
 	if (!InputMapping)
 	{
@@ -165,14 +170,11 @@ void ASWCharacter::BuildFallbackInput()
 		InputMapping->MapKey(IA_Crouch, EKeys::LeftControl);
 		InputMapping->MapKey(IA_Interact, EKeys::E);
 		InputMapping->MapKey(IA_Flashlight, EKeys::F);
+		InputMapping->MapKey(IA_Jump, EKeys::SpaceBar);
 
-		// Lean sits on Alt+A / Alt+D specifically so E stays free for Interact.
-		{
-			FEnhancedActionKeyMapping& L = InputMapping->MapKey(IA_LeanLeft, EKeys::A);
-			L.Modifiers.Add(NewObject<UInputModifierNegate>(InputMapping));
-			UInputTriggerChordAction* Chord = NewObject<UInputTriggerChordAction>(InputMapping);
-			L.Triggers.Add(Chord);
-		}
+		// Lean on Q/Z, deliberately not Q/E -- E belongs to Interact. An earlier
+		// Alt+A chord was dropped: it shared the A key with strafing, which is
+		// exactly the kind of overlap that produces a bug you cannot reproduce.
 		InputMapping->MapKey(IA_LeanLeft, EKeys::Q);
 		InputMapping->MapKey(IA_LeanRight, EKeys::Z);
 	}
@@ -214,6 +216,8 @@ void ASWCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	EIC->BindAction(IA_LeanLeft, ETriggerEvent::Completed, this, &ASWCharacter::Input_LeanLeft);
 	EIC->BindAction(IA_LeanRight, ETriggerEvent::Triggered, this, &ASWCharacter::Input_LeanRight);
 	EIC->BindAction(IA_LeanRight, ETriggerEvent::Completed, this, &ASWCharacter::Input_LeanRight);
+	EIC->BindAction(IA_Jump, ETriggerEvent::Started, this, &ASWCharacter::Input_JumpStart);
+	EIC->BindAction(IA_Jump, ETriggerEvent::Completed, this, &ASWCharacter::Input_JumpStop);
 }
 
 void ASWCharacter::Input_Move(const FInputActionValue& Value)
@@ -316,6 +320,114 @@ void ASWCharacter::Input_LeanRight(const FInputActionValue& Value)
 }
 
 // ---------------------------------------------------------------------------
+// Jump
+//
+// "Smooth" here is mostly forgiveness, not height. Three things do the work:
+// coyote time (a jump pressed just after leaving a ledge still counts), input
+// buffering (a jump pressed just before landing fires on touchdown instead of
+// being swallowed), and a variable arc (release early to cut it short). Without
+// them a jump feels like it ignores you roughly one press in five.
+// ---------------------------------------------------------------------------
+
+bool ASWCharacter::CanJumpInternal_Implementation() const
+{
+	if (Super::CanJumpInternal_Implementation())
+	{
+		return true;
+	}
+
+	// Coyote time: briefly after walking off an edge, still allow the jump.
+	return !bIsCrouched
+		&& GetCharacterMovement()->IsFalling()
+		&& TimeSinceLeftGround <= CoyoteTime
+		&& !bHasJumpedSinceGrounded;
+}
+
+void ASWCharacter::Input_JumpStart()
+{
+	// Crouched: stand up first, and remember the press so it fires as soon as
+	// the capsule has room. Swallowing it would feel like a dropped input.
+	if (bIsCrouched)
+	{
+		UnCrouch();
+		JumpBufferTimer = JumpBufferTime;
+		return;
+	}
+
+	if (!CanJump())
+	{
+		JumpBufferTimer = JumpBufferTime;
+		return;
+	}
+
+	const bool bSprintJump = bIsSprinting && GetVelocity().Size2D() > WalkSpeed * 1.1f;
+	const bool bMoving = GetVelocity().Size2D() > 10.f;
+
+	float Velocity = JumpVelocityIdle;
+	float Cost = JumpStaminaCost;
+	if (bSprintJump)
+	{
+		Velocity = JumpVelocitySprint;
+		Cost = JumpStaminaCostSprint;
+	}
+	else if (bMoving)
+	{
+		Velocity = JumpVelocityWalk;
+	}
+
+	UCharacterMovementComponent* Move = GetCharacterMovement();
+	Move->JumpZVelocity = Velocity;
+	Move->AirControl = bSprintJump ? AirControlSprint : AirControlDefault;
+
+	CurrentStamina = FMath::Max(0.f, CurrentStamina - Cost);
+	TimeSinceStaminaSpend = 0.f;
+
+	bHasJumpedSinceGrounded = true;
+	JumpBufferTimer = 0.f;
+	Jump();
+}
+
+void ASWCharacter::Input_JumpStop()
+{
+	StopJumping();
+
+	// Variable height: cut upward velocity on release so a tap is a hop.
+	if (bVariableJumpHeight)
+	{
+		FVector& Vel = GetCharacterMovement()->Velocity;
+		if (Vel.Z > 0.f)
+		{
+			Vel.Z *= JumpCutMultiplier;
+		}
+	}
+}
+
+void ASWCharacter::UpdateJump(float DeltaSeconds)
+{
+	const bool bFalling = GetCharacterMovement()->IsFalling();
+
+	if (bFalling)
+	{
+		TimeSinceLeftGround += DeltaSeconds;
+	}
+	else
+	{
+		TimeSinceLeftGround = 0.f;
+		bHasJumpedSinceGrounded = false;
+	}
+
+	if (JumpBufferTimer > 0.f)
+	{
+		JumpBufferTimer -= DeltaSeconds;
+		if (!bFalling && !bIsCrouched && CanJump())
+		{
+			JumpBufferTimer = 0.f;
+			Input_JumpStart();
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Tick
 // ---------------------------------------------------------------------------
 
@@ -324,6 +436,7 @@ void ASWCharacter::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	UpdateStamina(DeltaSeconds);
+	UpdateJump(DeltaSeconds);
 	UpdateFootsteps(DeltaSeconds);
 	UpdateCamera(DeltaSeconds);
 
@@ -433,6 +546,10 @@ void ASWCharacter::Landed(const FHitResult& Hit)
 	const float FallSpeed = FMath::Abs(GetCharacterMovement()->Velocity.Z);
 	LandingDip = FMath::Min(FallSpeed * LandingDipScale, LandingDipMax);
 
+	TimeSinceLeftGround = 0.f;
+	bHasJumpedSinceGrounded = false;
+	GetCharacterMovement()->AirControl = AirControlDefault;
+
 	EmitNoise(NoiseRangeLand);
 }
 
@@ -487,10 +604,18 @@ void ASWCharacter::UpdateCamera(float DeltaSeconds)
 	CurrentLean = FMath::FInterpTo(CurrentLean, AllowedLean, DeltaSeconds, LeanInterpSpeed);
 
 	// --- compose -----------------------------------------------------------
+	// Crouching shrinks the capsule and drops the actor so the feet stay planted,
+	// but FirstPersonBody keeps a fixed offset sized for standing. Without this
+	// compensation the crouched eye ends up far below where EyeHeightCrouched asks
+	// for. Adding back the half-height difference keeps both heights measured from
+	// the floor, which is what they claim to be.
+	const float HalfHeightCompensation =
+		GetDefaultHalfHeight() - GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
+
 	const FVector Offset(
 		CurrentBobOffset.X,
 		CurrentBobOffset.Y + CurrentLean * LeanOffset,
-		CurrentEyeHeight + CurrentBobOffset.Z + BreathZ - LandingDip);
+		CurrentEyeHeight + HalfHeightCompensation + CurrentBobOffset.Z + BreathZ - LandingDip);
 
 	Camera->SetRelativeLocation(Offset);
 	Camera->SetRelativeRotation(FRotator(0.f, 0.f, CurrentLean * LeanAngle + BreathRoll));

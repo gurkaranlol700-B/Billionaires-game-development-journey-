@@ -49,12 +49,13 @@ public:
 
 	// ---- camera -----------------------------------------------------------
 
-	/** Eye height above the capsule base while standing. 165 = slightly short, deliberately: it makes the ceiling press down. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|Camera", meta = (ClampMin = "80.0", ClampMax = "200.0"))
-	float EyeHeightStanding = 165.f;
+	/** Eye height above the FLOOR while standing. 174 puts the character at roughly 185cm. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|Camera", meta = (ClampMin = "80.0", ClampMax = "220.0"))
+	float EyeHeightStanding = 174.f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|Camera", meta = (ClampMin = "40.0", ClampMax = "160.0"))
-	float EyeHeightCrouched = 92.f;
+	/** Eye height above the FLOOR while crouched -- the capsule shrink is compensated for in UpdateCamera. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|Camera", meta = (ClampMin = "40.0", ClampMax = "170.0"))
+	float EyeHeightCrouched = 98.f;
 
 	/** How fast the eye slides between standing and crouched. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|Camera")
@@ -102,6 +103,48 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|Movement")
 	float GroundFriction = 6.f;
+
+	// ---- jump -------------------------------------------------------------
+	// Jump strength depends on what you were doing. A standing hop and a sprint
+	// leap being the same height is one of those things nobody can name but
+	// everybody feels as "floaty".
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|Jump")
+	float JumpVelocityIdle = 340.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|Jump")
+	float JumpVelocityWalk = 385.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|Jump")
+	float JumpVelocitySprint = 445.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|Jump")
+	float JumpStaminaCost = 8.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|Jump")
+	float JumpStaminaCostSprint = 16.f;
+
+	/** Grace period after walking off a ledge during which a jump still counts. Players press late; this forgives it. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|Jump")
+	float CoyoteTime = 0.12f;
+
+	/** Press jump slightly before landing and it fires on touchdown instead of being eaten. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|Jump")
+	float JumpBufferTime = 0.16f;
+
+	/** Release early to cut the jump short -- tap for a hop, hold for the full arc. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|Jump")
+	bool bVariableJumpHeight = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|Jump")
+	float JumpCutMultiplier = 0.45f;
+
+	/** A little more steering mid-sprint-jump so a leap can be aimed. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|Jump")
+	float AirControlSprint = 0.16f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|Jump")
+	float AirControlDefault = 0.08f;
 
 	// ---- stamina ----------------------------------------------------------
 
@@ -280,6 +323,9 @@ public:
 	TObjectPtr<UInputAction> IA_LeanRight;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|Input")
+	TObjectPtr<UInputAction> IA_Jump;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|Input")
 	float LookSensitivity = 0.6f;
 
 protected:
@@ -293,6 +339,11 @@ protected:
 	void Input_FlashlightToggle();
 	void Input_LeanLeft(const FInputActionValue& Value);
 	void Input_LeanRight(const FInputActionValue& Value);
+	void Input_JumpStart();
+	void Input_JumpStop();
+
+	/** Widened so a jump pressed just after leaving a ledge still counts (coyote time). */
+	virtual bool CanJumpInternal_Implementation() const override;
 
 	/** Sprint is a request the server grants, so a client cannot simply declare itself fast. */
 	UFUNCTION(Server, Reliable)
@@ -300,6 +351,7 @@ protected:
 
 	void UpdateStamina(float DeltaSeconds);
 	void UpdateMaxSpeed();
+	void UpdateJump(float DeltaSeconds);
 	void UpdateCamera(float DeltaSeconds);
 	void UpdateFootsteps(float DeltaSeconds);
 	void EmitNoise(float Range);
@@ -314,6 +366,9 @@ private:
 	float TimeSinceStaminaSpend = 0.f;
 	float LeanTarget = 0.f;
 	float CurrentLean = 0.f;
+	float TimeSinceLeftGround = 0.f;
+	float JumpBufferTimer = 0.f;
+	bool bHasJumpedSinceGrounded = false;
 	FVector CurrentBobOffset = FVector::ZeroVector;
 	bool bFlashlightOn = true;
 	bool bBuiltFallbackInput = false;
