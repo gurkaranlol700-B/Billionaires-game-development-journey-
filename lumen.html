@@ -1,0 +1,871 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Light That Was Never On</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* ==========================================================================
+   SEAWALL BUILD LOG
+   Dark-first: bare :root carries the complete dark palette, light overrides
+   under prefers-color-scheme:light and [data-theme="light"].
+   Palette is Gunkanjima -- wet concrete, sea dark, oxide rust on rebar.
+   ========================================================================== */
+
+:root {
+  /* grounds */
+  --g-0:  #0B0F11;   /* page ground -- sea-dark, blue-green cast */
+  --g-1:  #12181B;   /* raised surface */
+  --g-2:  #1A2226;   /* card */
+  --g-3:  #232D32;   /* inset / code */
+  --line: #2C383E;
+  --line-soft: #202A2F;
+
+  /* text */
+  --tx-1: #E4E9EA;   /* primary */
+  --tx-2: #A3B0B4;   /* secondary */
+  --tx-3: #6E7F85;   /* tertiary / labels */
+
+  /* accent + semantic */
+  --oxide:     #C05F32;   /* THE accent -- rust bleeding through concrete */
+  --oxide-dim: #8E4626;
+  --oxide-wash:#2A1912;
+  --verdigris: #5A9B85;   /* done */
+  --verdigris-wash:#132420;
+  --sodium:    #D9A441;   /* in progress / pending */
+  --sodium-wash:#241C0E;
+  --blood:     #C4483F;   /* blocked / failed */
+  --blood-wash:#26120F;
+
+  --shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 24px -12px rgba(0,0,0,.7);
+
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --g-0:  #E7E9E7;
+    --g-1:  #F1F2F0;
+    --g-2:  #FAFAF9;
+    --g-3:  #E4E7E5;
+    --line: #C9CFCC;
+    --line-soft: #DBE0DD;
+    --tx-1: #131A1C;
+    --tx-2: #4A585C;
+    --tx-3: #6E7F85;
+    --oxide:     #9C4520;
+    --oxide-dim: #C05F32;
+    --oxide-wash:#F6E7DF;
+    --verdigris: #2F6B57;
+    --verdigris-wash:#E0EDE8;
+    --sodium:    #8A6212;
+    --sodium-wash:#F5EBD6;
+    --blood:     #A32E26;
+    --blood-wash:#F7E2E0;
+    --shadow: 0 1px 2px rgba(19,26,28,.06), 0 8px 24px -14px rgba(19,26,28,.22);
+  }
+}
+
+:root[data-theme="light"] {
+  --g-0:  #E7E9E7;
+  --g-1:  #F1F2F0;
+  --g-2:  #FAFAF9;
+  --g-3:  #E4E7E5;
+  --line: #C9CFCC;
+  --line-soft: #DBE0DD;
+  --tx-1: #131A1C;
+  --tx-2: #4A585C;
+  --tx-3: #6E7F85;
+  --oxide:     #9C4520;
+  --oxide-dim: #C05F32;
+  --oxide-wash:#F6E7DF;
+  --verdigris: #2F6B57;
+  --verdigris-wash:#E0EDE8;
+  --sodium:    #8A6212;
+  --sodium-wash:#F5EBD6;
+  --blood:     #A32E26;
+  --blood-wash:#F7E2E0;
+  --shadow: 0 1px 2px rgba(19,26,28,.06), 0 8px 24px -14px rgba(19,26,28,.22);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--g-0);
+  color: var(--tx-1);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: 900px; margin: 0 auto; padding: 0 24px 96px; }
+
+/* ---------- sticky top navigation ---------- */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  /* Opaque, from a token -- a transparent bar would let text scroll through it. */
+  background: var(--g-0);
+  border-bottom: 1px solid var(--line);
+}
+.nav-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 24px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.nav-brand {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 1.02rem;
+  letter-spacing: .05em;
+  color: var(--tx-1);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.nav-brand:hover { color: var(--oxide); }
+.nav-links {
+  display: flex; gap: 6px;
+  /* Six links need ~730px. On narrower screens the row scrolls sideways
+     inside the bar instead of pushing the whole page wider. */
+  min-width: 0; overflow-x: auto; scrollbar-width: none;
+}
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-links a, .nav-brand { flex: none; }
+.nav-links a {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  text-decoration: none;
+  padding: 7px 12px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.nav-links a:hover { color: var(--tx-1); border-color: var(--line); }
+.nav-links a[aria-current="page"] {
+  color: var(--oxide);
+  border-color: var(--oxide);
+  background: var(--oxide-wash);
+}
+
+/* ---------- big next-page card ---------- */
+
+.pagelink {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px 20px;
+  margin: 56px 0 0;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--oxide);
+  background: var(--g-1);
+  text-decoration: none;
+  color: inherit;
+}
+.pagelink:hover { background: var(--g-2); border-left-width: 6px; }
+.pagelink .k {
+  grid-column: 1;
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--oxide);
+}
+.pagelink .t {
+  grid-column: 1;
+  font-family: var(--f-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: var(--tx-1);
+  line-height: 1.1;
+}
+.pagelink .d {
+  grid-column: 1;
+  font-size: .94rem;
+  color: var(--tx-2);
+  max-width: 56ch;
+}
+.pagelink .arrow {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  font-family: var(--f-display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--oxide);
+  line-height: 1;
+}
+@media (max-width: 520px) {
+  .pagelink { grid-template-columns: 1fr; }
+  .pagelink .arrow { grid-column: 1; grid-row: auto; font-size: 1.5rem; }
+}
+
+/* ---------- masthead ---------- */
+
+.mast {
+  border-bottom: 1px solid var(--line);
+  padding: 56px 0 28px;
+  margin-bottom: 40px;
+}
+.eyebrow {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--oxide);
+  margin: 0 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.eyebrow::before {
+  content: "";
+  width: 28px; height: 2px;
+  background: var(--oxide);
+  flex: none;
+}
+h1 {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(2.6rem, 9vw, 4.6rem);
+  line-height: .94;
+  letter-spacing: -.035em;
+  margin: 0 0 16px;
+  text-wrap: balance;
+}
+.dek {
+  font-size: 1.06rem;
+  color: var(--tx-2);
+  max-width: 62ch;
+  margin: 0;
+}
+.dek strong { color: var(--tx-1); font-weight: 600; }
+
+/* ---------- status board ---------- */
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  background: var(--line-soft);
+  border: 1px solid var(--line-soft);
+  margin: 32px 0 0;
+}
+.cell { background: var(--g-1); padding: 14px 16px; }
+.cell .k {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  display: block;
+  margin-bottom: 6px;
+}
+.cell .v {
+  font-family: var(--f-display);
+  font-size: 1.22rem;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums;
+}
+.cell .v.ok   { color: var(--verdigris); }
+.cell .v.warn { color: var(--sodium); }
+
+/* ---------- section headings ---------- */
+
+h2 {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 1.6rem;
+  letter-spacing: -.02em;
+  margin: 64px 0 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  text-wrap: balance;
+}
+h3 {
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: 1.06rem;
+  letter-spacing: -.005em;
+  margin: 28px 0 10px;
+}
+p { margin: 0 0 14px; max-width: 68ch; }
+a { color: var(--oxide); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--oxide);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ---------- log entries ---------- */
+
+.log { display: flex; flex-direction: column; gap: 0; }
+
+.entry {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: 0 22px;
+  padding: 30px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.entry:last-child { border-bottom: none; }
+/* Grid items default to min-width:auto, so one long unbreakable line inside a
+   code block forces the whole entry -- and the page -- wider than a phone.
+   min-width:0 lets the column shrink and the code block scroll inside itself. */
+.entry > * { min-width: 0; }
+
+.seq {
+  font-family: var(--f-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx-3);
+  padding-top: 4px;
+  position: relative;
+}
+.seq::after {
+  content: "";
+  position: absolute;
+  left: 0; top: 30px; bottom: -34px;
+  width: 1px;
+  background: var(--line-soft);
+}
+.entry:last-child .seq::after { display: none; }
+
+.entry-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.entry-head h3 { margin: 0; font-size: 1.16rem; }
+
+.tag {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.tag.done    { color: var(--verdigris); border-color: var(--verdigris); background: var(--verdigris-wash); }
+.tag.running { color: var(--sodium);    border-color: var(--sodium);    background: var(--sodium-wash); }
+.tag.fixed   { color: var(--oxide);     border-color: var(--oxide);     background: var(--oxide-wash); }
+.tag.you     { color: var(--tx-2);      border-color: var(--line);      background: var(--g-2); }
+
+/* ---------- evidence blocks ---------- */
+
+pre {
+  font-family: var(--f-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  background: var(--g-3);
+  border: 1px solid var(--line-soft);
+  border-left: 2px solid var(--tx-3);
+  padding: 13px 15px;
+  margin: 14px 0;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--tx-2);
+}
+pre.bad  { border-left-color: var(--blood); }
+pre.good { border-left-color: var(--verdigris); }
+pre b { color: var(--tx-1); font-weight: 600; }
+pre .hl-bad  { color: var(--blood); font-weight: 600; }
+pre .hl-good { color: var(--verdigris); font-weight: 600; }
+pre .dim { color: var(--tx-3); }
+
+code {
+  font-family: var(--f-mono);
+  font-size: .88em;
+  background: var(--g-3);
+  border: 1px solid var(--line-soft);
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+pre code { background: none; border: none; padding: 0; white-space: pre; }
+
+/* ---------- tables ---------- */
+
+.tw { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line-soft); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 460px; }
+th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line-soft); }
+th {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  font-weight: 500;
+  background: var(--g-1);
+}
+tbody tr:last-child td { border-bottom: none; }
+td.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.ok  { color: var(--verdigris); font-family: var(--f-mono); font-size: 12px; font-weight: 600; }
+
+/* ---------- callout ---------- */
+
+.note {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--oxide);
+  background: var(--g-1);
+  padding: 15px 18px;
+  margin: 18px 0;
+}
+.note .lbl {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--oxide);
+  display: block;
+  margin-bottom: 7px;
+}
+.note p:last-child { margin-bottom: 0; }
+.note.lesson { border-left-color: var(--verdigris); }
+.note.lesson .lbl { color: var(--verdigris); }
+
+/* ---------- story block ---------- */
+
+.acts { display: grid; gap: 1px; background: var(--line-soft); border: 1px solid var(--line-soft); margin: 18px 0; }
+.act { background: var(--g-1); padding: 16px 18px; }
+.act .n {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--oxide);
+  display: block;
+  margin-bottom: 6px;
+}
+.act h4 { font-family: var(--f-display); font-size: 1.02rem; font-weight: 700; margin: 0 0 6px; letter-spacing: -.01em; }
+.act p { margin: 0; font-size: .94rem; color: var(--tx-2); max-width: none; }
+
+/* ---------- checklist ---------- */
+
+ul.check { list-style: none; padding: 0; margin: 16px 0; display: flex; flex-direction: column; gap: 2px; }
+ul.check li {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  align-items: baseline;
+  padding: 7px 10px;
+  background: var(--g-1);
+  border-left: 2px solid var(--line);
+  font-size: .95rem;
+}
+ul.check li::before { font-family: var(--f-mono); font-size: 12px; font-weight: 600; }
+ul.check li.d { border-left-color: var(--verdigris); color: var(--tx-2); }
+ul.check li.d::before { content: "[x]"; color: var(--verdigris); }
+ul.check li.r { border-left-color: var(--sodium); }
+ul.check li.r::before { content: "[~]"; color: var(--sodium); }
+ul.check li.o::before { content: "[ ]"; color: var(--tx-3); }
+ul.check li.y { border-left-color: var(--oxide); }
+ul.check li.y::before { content: "[!]"; color: var(--oxide); }
+
+ul.plain { margin: 12px 0; padding-left: 20px; }
+ul.plain li { margin-bottom: 7px; max-width: 66ch; }
+
+/* ---------- footer ---------- */
+
+.foot {
+  margin-top: 72px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  color: var(--tx-3);
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 620px) {
+  .entry { grid-template-columns: 1fr; gap: 0; }
+  .seq { padding-top: 0; margin-bottom: 8px; }
+  .seq::after { display: none; }
+  .wrap { padding: 0 18px 64px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="nav-brand" href="https://billionaires-game-development-journ.vercel.app/">SEAWALL</a>
+    <div class="nav-links">
+      <a href="https://billionaires-game-development-journ.vercel.app/">Build Log</a>
+      <a href="https://billionaires-game-development-journ.vercel.app/pipeline.html">Workstation</a>
+      <a href="https://billionaires-game-development-journ.vercel.app/handbook.html">Handbook</a>
+      <a href="https://billionaires-game-development-journ.vercel.app/fixtures.html">Fixtures</a>
+      <a href="https://billionaires-game-development-journ.vercel.app/character.html">Character</a>
+      <a href="https://billionaires-game-development-journ.vercel.app/lumen.html" aria-current="page">Lumen</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <p class="eyebrow">Seawall &middot; Session 05</p>
+    <h1>THE LIGHT THAT WAS NEVER ON</h1>
+    <p class="dek">
+      A week away, a system drive with 2.3&nbsp;GB left, and a routine performance check that
+      exposed the biggest mistake in the project so far: global illumination had been silently
+      switched off since the day the project was created &mdash; while two whole sessions of
+      lighting were tuned on top of it.
+    </p>
+
+    <div class="board">
+      <div class="cell"><span class="k">Days Lumen was off</span><span class="v">9</span></div>
+      <div class="cell"><span class="k">Warnings logged</span><span class="v">0</span></div>
+      <div class="cell"><span class="k">fps without GI</span><span class="v">189</span></div>
+      <div class="cell"><span class="k">fps with Lumen</span><span class="v ok">123</span></div>
+    </div>
+  </header>
+
+  <h2>Part one &mdash; a drive with 2.3&nbsp;GB left</h2>
+
+  <p>
+    First check after a week away: <strong>C: was 100% full.</strong> It had been 13&nbsp;GB free when
+    we stopped. That matters more than it sounds &mdash; Unreal constantly writes shaders, caches and
+    saves, and a system drive that runs out mid-write is how projects get corrupted. Nothing got
+    launched until that was fixed.
+  </p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>What</th><th>Size</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td><strong>pip download cache</strong></td><td>16.8&nbsp;GB</td><td><strong>Cleared.</strong> Six ~2.5&nbsp;GB PyTorch installers from late 2025. Pure cache</td></tr>
+        <tr><td>uv download cache</td><td>19&nbsp;GB</td><td>Pure cache, but in use by running MCP servers &mdash; clean later</td></tr>
+        <tr><td>Downloads folder</td><td>44&nbsp;GB</td><td>Personal files. Not ours to touch</td></tr>
+        <tr><td>hiberfil.sys</td><td>12.7&nbsp;GB</td><td>Optional: <code>powercfg /h off</code>. Costs Fast Startup</td></tr>
+        <tr><td>NVIDIA DXCache</td><td>5.6&nbsp;GB</td><td><strong>Leave it.</strong> The driver's shader cache &mdash; clearing makes every game stutter</td></tr>
+        <tr><td>Visual Studio installer leftovers</td><td>4.0&nbsp;GB</td><td>Unpacked install files from the toolchain setup. Probably safe</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <span class="lbl">What a package cache actually is</span>
+    <p>When Python's installers (<code>pip</code>, <code>uv</code>) download a package, they keep a copy
+    so the next install is instant. Neither ever deletes those copies. PyTorch builds with GPU support
+    are about 2.5&nbsp;GB each, so every project that ever installed one left one behind. The cache was
+    cleared with pip's own command, <code>pip cache purge</code>, rather than deleting the folder by
+    hand &mdash; and only after pip confirmed that exact folder was its cache.</p>
+  </div>
+
+  <div class="note lesson">
+    <span class="lbl">Look before deleting</span>
+    <p>The hibernation file looked like free space, but another project on this machine (a remote-wake
+    tool) involved sleep states. Its notes showed it used S3 sleep, which never touches the hibernation
+    file, and the wake feature had been dropped anyway &mdash; so it is safe. Five minutes of checking
+    beats breaking something that lives in a different folder.</p>
+  </div>
+
+  <h2>Part two &mdash; measuring instead of guessing</h2>
+
+  <p>
+    The plan was a quick performance baseline: open the console, type <code>stat unit</code>, read the
+    numbers. That shows <em>one moment</em>. Instead we used Unreal's built-in <strong>CSV
+    profiler</strong>, which records exact timings for every frame into a file &mdash; averages, the
+    slowest 1% of frames, spikes, and a permanent record to compare every future change against.
+  </p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Number</th><th>What it measures</th></tr></thead>
+      <tbody>
+        <tr><td><strong>FrameTime</strong></td><td>Total time for one frame. <strong>16.7&nbsp;ms = 60&nbsp;fps</strong></td></tr>
+        <tr><td>GameThreadTime</td><td>Gameplay code &mdash; movement, the character, logic</td></tr>
+        <tr><td>RenderThreadTime</td><td>CPU work deciding what to draw</td></tr>
+        <tr><td>RHIThreadTime</td><td>CPU work handing that to the graphics driver</td></tr>
+        <tr><td>GPUTime</td><td>The graphics card actually drawing it</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>Every condition of the capture was chosen so the number would mean something:</p>
+  <ul class="check">
+    <li class="d"><strong>Editor closed</strong> &mdash; its own viewport also renders the corridor, and would steal GPU time</li>
+    <li class="d"><strong>Standalone game at a fixed 1920&times;1080</strong> &mdash; closer to a shipped build, and repeatable</li>
+    <li class="d"><strong>VSync off</strong> &mdash; otherwise every frame waits for the monitor and everything reads a flat 16.7&nbsp;ms</li>
+    <li class="d"><strong>First 600 frames thrown away</strong> &mdash; they include loading and shader warmup, not gameplay</li>
+  </ul>
+
+  <div class="log">
+    <div class="entry">
+      <div class="seq">1</div>
+      <div>
+        <div class="entry-head"><h3>The capture that &ldquo;hung&rdquo; for seven minutes</h3><span class="tag fixed">Fixed</span></div>
+        <p>The profiler never produced a file. After seven minutes the game was force-closed and the
+        investigation started &mdash; crash reports, the Windows event log, the engine source. Then the
+        real log turned up:</p>
+        <pre class="good">LogCsvProfiler: Capture Ended. Writing CSV to file :
+  .../Users/Intel/AppData/Local/UnrealEngine/5.8/Saved/Profiling/CSV/...
+LogCsvProfiler:   Frames : <span class="hl-good">2400</span></pre>
+        <p>It finished <strong>23 seconds</strong> after launch. When the editor program runs a project
+        with <code>-game</code>, it writes logs and profiling data to the <em>engine's</em> user folder,
+        not the project's <code>Saved</code> folder. The game ran perfectly the whole time while we
+        watched an empty folder.</p>
+        <div class="note lesson">
+          <span class="lbl">Lesson</span>
+          <p>&ldquo;It hung&rdquo; and &ldquo;I am looking in the wrong place&rdquo; look identical from
+          the outside. Before assuming something failed, confirm where it actually writes.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Part three &mdash; the pass that was not there</h2>
+
+  <p>
+    The baseline came back excellent: <strong>189&nbsp;fps average</strong>, only 32% of the 60&nbsp;fps
+    budget. But the profiler also lists every GPU <em>pass</em> &mdash; each separate job the graphics
+    card does per frame &mdash; and something was missing from it.
+  </p>
+
+  <div class="note">
+    <span class="lbl">What global illumination is</span>
+    <p>Light <strong>bouncing</strong>. A lamp lights the floor; the floor throws some of that light back
+    up onto the walls and ceiling. Without it, anything a light does not hit directly gets only flat
+    ambient fill, plus a cheap darkening effect in corners (SSAO). In a dark concrete corridor, bounce
+    is most of what makes light feel real. <strong>Lumen</strong> is Unreal's system for calculating it
+    in real time.</p>
+  </div>
+
+  <p>The project was configured for Lumen. Yet among 26 active GPU passes, <strong>not one belonged to
+  Lumen</strong>. Instead the list contained SSAO and screen-space reflections &mdash; exactly the older,
+  cheaper effects Lumen <em>replaces</em> when it runs. The capture's own metadata said
+  <code>raytracing = 0</code>. And both the standalone game and the editor had logged this:</p>
+
+  <pre class="bad">LogRendererCore: <span class="hl-bad">Ray tracing is disabled.</span>
+  Reason: disabled through project setting (r.RayTracing=0).</pre>
+
+  <h3>Why it switched itself off without a word</h3>
+  <p>
+    Lumen has <strong>two ways</strong> to work out where light bounces. It can use the graphics card's
+    dedicated ray-tracing hardware, or it can trace against <em>distance fields</em> &mdash; a simplified
+    3D copy of every mesh, handled in software. The engine source is explicit that it needs one of
+    them:
+  </p>
+  <pre class="good">bool Lumen::IsSoftwareRayTracingSupported()
+{
+    return DoesProjectSupportDistanceFields();
+}
+...
+&amp;&amp; (Lumen::UseHardwareRayTracing(*View.Family) || IsSoftwareRayTracingSupported());</pre>
+  <p>
+    If neither is available, Lumen quietly declines to render and Unreal falls back to SSAO. No error.
+    No warning. The only trace is a line about ray tracing being disabled, buried in a
+    thousand-line startup log.
+  </p>
+
+  <h3>How it happened</h3>
+  <p>
+    The project config written in Session&nbsp;01 (commit <code>794077f</code>) turned on
+    <code>r.Lumen.HardwareRayTracing=1</code> &mdash; &ldquo;use hardware ray tracing for Lumen&rdquo;.
+    But git history shows the project <strong>never</strong> contained either thing underneath it: no
+    <code>r.RayTracing</code> to allow hardware ray tracing at all, and no
+    <code>r.GenerateMeshDistanceFields</code> for the software path. Even Epic's stock First Person
+    template ships with both. A hand-written config dropped them.
+  </p>
+
+  <div class="note lesson">
+    <span class="lbl">The lesson of the whole session</span>
+    <p><strong>A setting that says a feature is on is not evidence the feature is on.</strong> The
+    config read correctly, the corridor looked plausible, and nothing complained. It took a performance
+    measurement &mdash; listing what the GPU actually did &mdash; to notice. Everything lit in Sessions
+    02 and 03 was tuned without global illumination.</p>
+  </div>
+
+  <h2>Part four &mdash; switching it on properly</h2>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Option</th><th>Trade-off</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><strong>Hardware ray tracing</strong></td><td>Best quality the RTX card can give; glowing panels light the walls around them. Costs a shader recompile and a re-tune</td><td><strong>Chosen</strong></td></tr>
+        <tr><td>Software Lumen</td><td>Cheaper, but the corridor is built from heavily stretched cubes, and distance fields handle stretched meshes badly</td><td></td></tr>
+        <tr><td>No GI</td><td>Free, keeps the approved look &mdash; but the island at M4 becomes far harder to light</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <span class="lbl">What a shader model is</span>
+    <p>Shaders are the small programs the graphics card runs to draw every pixel. They are compiled for a
+    particular <strong>shader model</strong> &mdash; roughly, a version of the language the card speaks.
+    The engine defaults to SM5. Hardware ray tracing needs <strong>SM6</strong>. The card itself
+    supports 6.7; the project simply never asked for it, so the engine never even checked whether ray
+    tracing was possible.</p>
+  </div>
+
+  <p>The fix was copied from Epic's own 5.8 templates rather than written from memory &mdash; memory is how the gap appeared:</p>
+  <pre class="good">[/Script/Engine.RendererSettings]
+r.RayTracing=True
+r.SkinCache.CompileShaders=True
+
+[/Script/WindowsTargetPlatform.WindowsTargetSettings]
+-D3D12TargetedShaderFormats=PCD3D_SM5
++D3D12TargetedShaderFormats=PCD3D_SM6</pre>
+
+  <div class="note">
+    <span class="lbl">The hidden dependency: skin cache</span>
+    <p>In the engine source, turning on ray tracing through Project Settings pops up <em>&ldquo;Ray
+    Tracing requires enabling skin cache&rdquo;</em> &mdash; and answering no switches ray tracing back
+    off. Editing the config file skips that prompt entirely, so it has to be set by hand. It is also
+    what lets animated characters, like the Watchman at M2, appear in ray-traced lighting at all.</p>
+  </div>
+
+  <p>
+    SM6 <em>replaces</em> SM5 rather than being added beside it, which would compile every shader twice.
+    Distance fields were deliberately left off for now &mdash; they only matter as a fallback for players
+    without ray-tracing cards, which is a shipping concern for M9.
+  </p>
+
+  <p>Verified from the log before trusting it:</p>
+  <pre class="good">LogD3D12RHI: Creating D3D12 RHI with Max Feature Level <span class="hl-good">SM6</span>
+LogRendererCore: <span class="hl-good">Ray tracing is enabled (dynamic).</span> Reason: r.RayTracing=1
+LogRendererCore: <span class="hl-good">Ray tracing shaders are enabled.</span></pre>
+  <p>
+    The full shader recompile ran on 8 worker processes and took <strong>about 4 minutes</strong>. The
+    warning beforehand said 30&ndash;60 &mdash; an estimate that was wrong, in the good direction.
+  </p>
+
+  <h2>Part five &mdash; proof, not a setting</h2>
+
+  <p>A setting saying ray tracing was on is exactly what fooled everyone before. So the identical capture was run again &mdash; same resolution, same view, editor closed:</p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>GPU pass</th><th>Before</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td>SSAO</td><td>0.088&nbsp;ms</td><td><strong>gone</strong></td></tr>
+        <tr><td>Screen-space reflections</td><td>0.023&nbsp;ms</td><td><strong>gone</strong></td></tr>
+        <tr><td>Lumen reflections</td><td>&mdash;</td><td><strong>0.186&nbsp;ms</strong></td></tr>
+        <tr><td>Lumen scene update</td><td>&mdash;</td><td><strong>0.095&nbsp;ms</strong></td></tr>
+        <tr><td>Ray tracing scene</td><td>&mdash;</td><td><strong>0.076&nbsp;ms</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Measure</th><th>No GI</th><th>Lumen HWRT</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td>Frame time (avg)</td><td>5.30&nbsp;ms</td><td>8.14&nbsp;ms</td><td>+2.84</td></tr>
+        <tr><td>Game thread</td><td>1.84&nbsp;ms</td><td>2.08&nbsp;ms</td><td>+0.24</td></tr>
+        <tr><td>RHI thread</td><td>1.62&nbsp;ms</td><td>3.35&nbsp;ms</td><td>+1.73</td></tr>
+        <tr><td>GPU</td><td>4.94&nbsp;ms</td><td>6.92&nbsp;ms</td><td>+1.98</td></tr>
+        <tr><td><strong>Average fps</strong></td><td>189</td><td><strong>123</strong></td><td></td></tr>
+        <tr><td><strong>1% low fps</strong></td><td>157</td><td><strong>89</strong></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    Most of the added cost is the CPU <strong>rebuilding the ray-tracing scene every frame</strong>
+    (the RHI thread, +1.73&nbsp;ms) and about 2&nbsp;ms more GPU work. The average frame still uses only
+    about <strong>half</strong> of the 60&nbsp;fps budget.
+  </p>
+
+  <h3>The number that did not add up</h3>
+  <p>
+    One pass still looked wrong. <code>LumenScreenProbeGather</code> &mdash; the part that computes
+    bounced light, normally one of Lumen's most expensive jobs &mdash; measured <strong>0.005&nbsp;ms</strong>.
+    Either bounce was not really working and only reflections were, or the profiler was filing its cost
+    under another heading (the <code>Lights</code> pass had tripled, 0.46 &rarr; 1.55&nbsp;ms).
+  </p>
+  <p>
+    Rather than keep digging, it got settled by eye. In the running game, the console command
+    <code>r.Lumen.DiffuseIndirect.Allow 0</code> switches bounce off, and <code>1</code> switches it back.
+    With bounce off, walls beside a pool of light go flat; with it on, warm light creeps up them and
+    the ceiling around each panel glows. The difference was visible &mdash; bounce is working. Why that
+    one timer reads so low is still unexplained, and is recorded as such in the baseline notes.
+  </p>
+
+  <div class="note lesson">
+    <span class="lbl">Numbers and eyes, both</span>
+    <p>The profiler proved Lumen was running. Only looking proved the bounce was doing something. Neither
+    alone would have been enough &mdash; which is the same lesson as the whole session, from the other
+    side.</p>
+  </div>
+
+  <h2>Where things stand</h2>
+
+  <ul class="check">
+    <li class="d">C: back from 2.3&nbsp;GB to 18&nbsp;GB free; the disk pattern is recorded so it gets checked each session</li>
+    <li class="d">Two profiled baselines with notes in <code>Profiling/Baselines</code>: without GI, and with Lumen</li>
+    <li class="d">Hardware ray tracing, SM6 and skin cache enabled, verified in both editor and game logs</li>
+    <li class="d">Lumen proven active by the passes the GPU runs; bounce light confirmed by eye</li>
+    <li class="o"><strong>The corridor lighting needs re-tuning</strong> &mdash; every light was set without bounce, so it will read brighter now</li>
+    <li class="o">Optional cleanup: uv cache 19&nbsp;GB, hibernation file 12.7&nbsp;GB, installer leftovers 4&nbsp;GB</li>
+    <li class="o">Distance-field fallback for GPUs without ray tracing &mdash; M9</li>
+    <li class="o">Next: the first sound pass</li>
+  </ul>
+
+  <div class="note lesson">
+    <span class="lbl">The session in one line</span>
+    <p>Two sessions of lighting were built on a renderer quietly ignoring the main thing it had been
+    asked for &mdash; and it took a performance test, not a look at the screen, to find out.</p>
+  </div>
+
+  <a class="pagelink" href="https://billionaires-game-development-journ.vercel.app/character.html">
+    <span class="k">Previously</span>
+    <span class="t">The Body You Cannot See</span>
+    <span class="d">A first-person character with weight, built without a single frame of animation.</span>
+    <span class="arrow" aria-hidden="true">&larr;</span>
+  </a>
+
+  <div class="foot">
+    <span>SEAWALL &middot; the light that was never on</span>
+    <span>Session 05 &middot; 14 Sep 2026</span>
+  </div>
+
+</div>
+
+<script>
+// On narrow screens the nav row scrolls sideways inside the bar. Scroll that row
+// by exactly as much as needed to show the current page's link -- and again once
+// the web fonts load, because the links get wider when the real fonts swap in.
+(function () {
+  function show() {
+    var bar = document.querySelector('.nav-links');
+    var a = bar && bar.querySelector('[aria-current="page"]');
+    if (!a || bar.scrollWidth <= bar.clientWidth) return;
+    var r = a.getBoundingClientRect(), b = bar.getBoundingClientRect();
+    if (r.right > b.right) bar.scrollLeft += (r.right - b.right) + 8;
+    if (r.left < b.left) bar.scrollLeft -= (b.left - r.left) + 8;
+  }
+  show();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(show);
+  window.addEventListener('load', show);
+})();
+</script>

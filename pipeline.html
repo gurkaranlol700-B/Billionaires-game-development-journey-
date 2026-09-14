@@ -1,3 +1,6 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Seawall Workstation</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -132,7 +135,14 @@ body {
   white-space: nowrap;
 }
 .nav-brand:hover { color: var(--oxide); }
-.nav-links { display: flex; gap: 6px; }
+.nav-links {
+  display: flex; gap: 6px;
+  /* Six links need ~730px. On narrower screens the row scrolls sideways
+     inside the bar instead of pushing the whole page wider. */
+  min-width: 0; overflow-x: auto; scrollbar-width: none;
+}
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-links a, .nav-brand { flex: none; }
 .nav-links a {
   font-family: var(--f-mono);
   font-size: 11px;
@@ -318,6 +328,10 @@ a:focus-visible, summary:focus-visible {
   border-bottom: 1px solid var(--line-soft);
 }
 .entry:last-child { border-bottom: none; }
+/* Grid items default to min-width:auto, so one long unbreakable line inside a
+   code block forces the whole entry -- and the page -- wider than a phone.
+   min-width:0 lets the column shrink and the code block scroll inside itself. */
+.entry > * { min-width: 0; }
 
 .seq {
   font-family: var(--f-mono);
@@ -509,6 +523,7 @@ ul.plain li { margin-bottom: 7px; max-width: 66ch; }
       <a href="https://billionaires-game-development-journ.vercel.app/handbook.html">Handbook</a>
       <a href="https://billionaires-game-development-journ.vercel.app/fixtures.html">Fixtures</a>
       <a href="https://billionaires-game-development-journ.vercel.app/character.html">Character</a>
+      <a href="https://billionaires-game-development-journ.vercel.app/lumen.html">Lumen</a>
     </div>
   </div>
 </nav>
@@ -806,3 +821,22 @@ ROUTE 3 &mdash; bespoke 3D          <span class="dim">creatures, hero props, any
   </div>
 
 </div>
+
+<script>
+// On narrow screens the nav row scrolls sideways inside the bar. Scroll that row
+// by exactly as much as needed to show the current page's link -- and again once
+// the web fonts load, because the links get wider when the real fonts swap in.
+(function () {
+  function show() {
+    var bar = document.querySelector('.nav-links');
+    var a = bar && bar.querySelector('[aria-current="page"]');
+    if (!a || bar.scrollWidth <= bar.clientWidth) return;
+    var r = a.getBoundingClientRect(), b = bar.getBoundingClientRect();
+    if (r.right > b.right) bar.scrollLeft += (r.right - b.right) + 8;
+    if (r.left < b.left) bar.scrollLeft -= (b.left - r.left) + 8;
+  }
+  show();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(show);
+  window.addEventListener('load', show);
+})();
+</script>
