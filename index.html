@@ -509,6 +509,9 @@ ul.plain li { margin-bottom: 7px; max-width: 66ch; }
   .seq { padding-top: 0; margin-bottom: 8px; }
   .seq::after { display: none; }
   .wrap { padding: 0 18px 64px; }
+  /* Inline code never wraps on desktop, so short settings stay whole. A long
+     phrase in inline code can't fit a phone, so let it wrap here. */
+  code { white-space: normal; overflow-wrap: anywhere; }
 }
 
 @media (prefers-reduced-motion: reduce) {
