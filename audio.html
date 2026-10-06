@@ -1,7 +1,7 @@
 <!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The Body You Cannot See</title>
+<title>The Sound of Your Own Body</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -526,9 +526,9 @@ ul.plain li { margin-bottom: 7px; max-width: 66ch; }
       <a href="https://billionaires-game-development-journ.vercel.app/pipeline.html">Workstation</a>
       <a href="https://billionaires-game-development-journ.vercel.app/handbook.html">Handbook</a>
       <a href="https://billionaires-game-development-journ.vercel.app/fixtures.html">Fixtures</a>
-      <a href="https://billionaires-game-development-journ.vercel.app/character.html" aria-current="page">Character</a>
+      <a href="https://billionaires-game-development-journ.vercel.app/character.html">Character</a>
       <a href="https://billionaires-game-development-journ.vercel.app/lumen.html">Lumen</a>
-      <a href="https://billionaires-game-development-journ.vercel.app/audio.html">Audio</a>
+      <a href="https://billionaires-game-development-journ.vercel.app/audio.html" aria-current="page">Audio</a>
     </div>
   </div>
 </nav>
@@ -536,102 +536,232 @@ ul.plain li { margin-bottom: 7px; max-width: 66ch; }
 <div class="wrap">
 
   <header class="mast">
-    <p class="eyebrow">Seawall &middot; Session 04</p>
-    <h1>THE BODY YOU CANNOT SEE</h1>
+    <p class="eyebrow">Seawall &middot; Session 06</p>
+    <h1>THE SOUND OF YOUR OWN BODY</h1>
     <p class="dek">
-      A first-person character with weight, built without a single frame of animation.
-      Why Arthur Morgan's heaviness lives in the camera rather than the skeleton, what we
-      deliberately refused to build, and the crouch bug that put the player's eyes at ankle height.
+      Sound is roughly half of horror, and the corridor had none of it. This session built the
+      audio system the whole game will use &mdash; and along the way discovered that 7.5&nbsp;GB of
+      free professional sound effects contained not one usable footstep, so the footsteps had to be
+      built out of arithmetic instead.
     </p>
 
     <div class="board">
-      <div class="cell"><span class="k">C++ classes</span><span class="v">2</span></div>
-      <div class="cell"><span class="k">Animations</span><span class="v ok">0</span></div>
-      <div class="cell"><span class="k">Content assets needed</span><span class="v ok">0</span></div>
-      <div class="cell"><span class="k">Milestone</span><span class="v">M1</span></div>
+      <div class="cell"><span class="k">Sounds made from maths</span><span class="v ok">86</span></div>
+      <div class="cell"><span class="k">Footsteps in 7.5&nbsp;GB</span><span class="v bad">0</span></div>
+      <div class="cell"><span class="k">Dials you can turn</span><span class="v">47</span></div>
+      <div class="cell"><span class="k">C++ classes</span><span class="v">8</span></div>
     </div>
   </header>
 
-  <h2>The question that framed everything</h2>
+  <h2>Part one &mdash; one number instead of a hundred sounds</h2>
 
   <p>
-    The brief was &ldquo;can we mimic Arthur Morgan &mdash; that weight, that sense that a body
-    takes time to move.&rdquo; The instinct is that this needs a character: a skeleton, animations,
-    foot placement. It does not, and understanding why saved the entire session.
+    The obvious way to build horror audio is to place sounds: a drone here, a heartbeat there, a
+    stinger on that trigger. It does not work, because fear is not a place. What makes
+    <em>Resident Evil Village</em> and <em>Outlast</em> feel the way they do is that the sound
+    reacts to your situation continuously, so your own body gives you away before you have seen
+    anything at all.
+  </p>
+
+  <p>
+    So the system is built around a single number, <strong>Fear</strong>, between 0 and 1. The game
+    feeds it &mdash; a scripted area, walking with the flashlight off, and from M2 the Watchman
+    closing in &mdash; and the audio decides what that <em>sounds</em> like:
+  </p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Fear</th><th>What the player hears</th></tr></thead>
+      <tbody>
+        <tr><td><strong>0.0</strong></td><td>Room tone, fluorescent hum, their own footsteps. No heartbeat at all</td></tr>
+        <tr><td><strong>0.2</strong></td><td>The heart becomes audible, slow. A sub drone starts to sit under the room</td></tr>
+        <tr><td><strong>0.5</strong></td><td>About 105&nbsp;BPM, breathing shifts to the frightened set, a dissonant cluster fades in</td></tr>
+        <tr><td><strong>1.0</strong></td><td>148&nbsp;BPM, drone at full, the world itself ducked down &mdash; you hear yourself more than the building</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    Fear rises fast and falls slowly, which is how panic actually behaves: it arrives all at once
+    and leaves reluctantly. One number, one rule, and every sound in the game can read it.
+  </p>
+
+  <div class="note">
+    <span class="lbl">Why a subsystem</span>
+    <p>It lives in a <code>UWorldSubsystem</code> &mdash; one per level, created automatically,
+    reachable from anywhere without wiring up a reference by hand. The Watchman will not need to
+    know the audio exists; it will call <code>ReportThreat</code> and the mix will do the rest.</p>
+  </div>
+
+  <h2>Part two &mdash; 7.5&nbsp;GB of free sound, and not one footstep</h2>
+
+  <p>
+    Sonniss gives away a game audio bundle at GDC every year: royalty-free, commercial use allowed,
+    no attribution required. The 2026 bundle is 7.47&nbsp;GB and 347 WAV files. It was downloaded,
+    extracted and catalogued with a small tool written for the job &mdash; it reads every file
+    header and the broadcast-WAV description that libraries write their notes into, then sorts
+    everything into the categories this game needs.
+  </p>
+
+  <p>The catalogue is where the plan fell apart:</p>
+
+  <pre class="good">category          files   minutes
+voice                59      26.4
+sea_wind             41      33.9
+electrical           33      20.5
+door                 31      17.3
+water                15      19.5
+body_breath          14       3.7
+<span class="hl-bad">footsteps            10       8.6</span>   &lt;- every one a false match</pre>
+
+  <p>
+    Those ten footsteps were a ticking clock, a pair of flip-flops, a metro station and a barber
+    chair foot pump. Searching all 347 filenames for every footstep word, including the industry
+    naming convention <code>FOLYFoot</code>, returned nothing usable. The bundle is a
+    <strong>sampler</strong>: two to four files from each of 125 libraries, not the libraries
+    themselves.
+  </p>
+
+  <p>
+    What it <em>does</em> contain is genuinely good for this island: <em>Moaning Metal</em>,
+    <em>Rocky Coast of Norway</em> for the seawall, <em>Fridge Hums</em>, <em>Sinister
+    Textures</em>, <em>Ghostly Presences</em>, bass drops, horn braams, colossal impacts, a haunted
+    house kit, human effort and panting, and cloth foley. The older bundles ship complete libraries
+    rather than samplers, so GDC 2019 &mdash; around 30&nbsp;GB &mdash; is downloading for the next
+    session.
   </p>
 
   <div class="note lesson">
-    <span class="lbl">Rockstar solved a different problem</span>
-    <p>You <em>watch</em> Arthur. Third-person weight has to be visible, so it needs a motion-matched
-    skeleton with feet that plant correctly. You do not watch your own character &mdash; you
-    <em>are</em> them. In first person the same weight is delivered by two things that have no
-    skeleton at all: <strong>how the movement accelerates</strong>, and <strong>what the camera
-    does about it</strong>.</p>
+    <span class="lbl">Lesson</span>
+    <p>&ldquo;7.5&nbsp;GB of professional sound effects&rdquo; and &ldquo;the sounds this game
+    needs&rdquo; are unrelated statements. Read the file list before planning around a library
+    &mdash; and when the file list is a page of marketing names, catalogue the files themselves.</p>
   </div>
 
-  <p>&ldquo;Whole character&rdquo; versus &ldquo;just the camera&rdquo; turned out to be a false choice. There are three layers and only one is optional:</p>
+  <h2>Part three &mdash; sounds that cannot be recorded</h2>
+
+  <p>
+    Some of the most important sounds in horror do not exist as objects, so no microphone can
+    capture them. They are built from arithmetic instead, which has the useful property that any of
+    them can be re-tuned in seconds by changing a number.
+  </p>
 
   <div class="tw">
     <table>
-      <thead><tr><th>Layer</th><th>What it is</th><th>Optional?</th></tr></thead>
+      <thead><tr><th>Sound</th><th>How it is made</th></tr></thead>
       <tbody>
-        <tr><td>Capsule &amp; movement</td><td>The physical body. Collides, fits through doors, crouches under things</td><td><strong>Never.</strong> Same work either way</td></tr>
-        <tr><td>Camera feel</td><td>Bob, sway, landing dip, lean, FOV shifts, breathing</td><td><strong>No</strong> &mdash; in first person this <em>is</em> the weight</td></tr>
-        <tr><td>Visible mesh</td><td>Arms, hands, legs, body</td><td><strong>Yes.</strong> The only part deferred</td></tr>
+        <tr><td><strong>Heartbeat</strong></td><td>A lub and a dub, each a low tone whose pitch <em>falls</em> as it decays, plus a soft click. The falling pitch is what makes it a body rather than a drum machine. Three intensities</td></tr>
+        <tr><td><strong>Sub drone</strong></td><td>Two oscillators, 34&nbsp;Hz and 34.37&nbsp;Hz. That 0.37&nbsp;Hz difference makes them beat slowly against each other, so the room feels wrong without anything being audible</td></tr>
+        <tr><td><strong>Dissonant cluster</strong></td><td>A minor second and a tritone stacked, detuned and drifting &mdash; the &ldquo;something is in here with you&rdquo; layer</td></tr>
+        <tr><td><strong>Shepard riser</strong></td><td>Octave-spaced partials sliding upward while a fixed curve fades out the top ones. It rises for twelve seconds and never arrives. This is the dizziness trick</td></tr>
+        <tr><td><strong>Stingers</strong></td><td>Sub boom for the chest, <em>inharmonic</em> metal partials for the fear, noise slam for the transient</td></tr>
+        <tr><td><strong>Tinnitus</strong></td><td>Two high tones and a narrow band of noise, decaying over six seconds &mdash; the ringing after a scare</td></tr>
       </tbody>
     </table>
   </div>
 
-  <p>So a whole character got built. Just not a character <em>model</em>.</p>
+  <p>
+    Footsteps were supposed to be recordings. With none available they were synthesised from three
+    stacked layers, which is also a fair description of what a real footstep <em>is</em>:
+  </p>
 
-  <h2>The numbers, and what each one is for</h2>
+  <pre class="good">transient   the heel striking stone        very short filtered noise burst
+body        the slab answering back       low resonance, decays fast
+grit        sand and dust under the sole  brief high noise, a few ms late</pre>
 
-  <div class="tw">
-    <table>
-      <thead><tr><th>Setting</th><th>Value</th><th>Why</th></tr></thead>
-      <tbody>
-        <tr><td>Walk</td><td>150 cm/s</td><td>Deliberate. Exploration should carry dread, not commute</td></tr>
-        <tr><td>Crouch</td><td>75 cm/s</td><td>Slow enough that hiding is a real cost</td></tr>
-        <tr><td>Sprint</td><td>420 cm/s</td><td>Genuinely fast, and genuinely brief</td></tr>
-        <tr><td><strong>Max acceleration</strong></td><td><strong>900</strong></td><td><strong>The weight number.</strong> ~0.45s to reach walk speed, so you lean into motion rather than teleporting into it</td></tr>
-        <tr><td>Braking deceleration</td><td>1100</td><td>You slide a few centimetres past where you released. Nothing in a body stops dead</td></tr>
-        <tr><td>FOV</td><td>75 &rarr; 81 sprinting</td><td>Narrow vision means things enter frame suddenly. The FOV push is most of what sells a sprint</td></tr>
-        <tr><td>Stamina</td><td>100, &minus;25/s</td><td>Four seconds of sprint. A panic button with a price, not transport</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <p>
+    Change the balance of those three and the same code gives a careful crouch-walk, a normal walk,
+    a run, a scuff, a push-off or a landing. Ten variations of each were generated &mdash; 70 files
+    &mdash; because a footstep played from a single file is heard as a loop within about four
+    steps.
+  </p>
 
   <div class="note">
-    <span class="lbl">Head bob is the most overdone effect in first-person games</span>
-    <p>Too much causes motion sickness and reads as amateur &mdash; RDR2's own first-person mode is
-    far more restrained than people remember. The target is <em>&ldquo;you would notice if it were
-    gone, but you never notice it is there.&rdquo;</em> So it ships with a master on/off switch,
-    because the only way to find that line is to walk the corridor with it on, then off.</p>
-    <p>The bob is driven by <strong>distance travelled, not elapsed time</strong>, so footsteps stay
-    in sync whether you are creeping or sprinting. Time-driven bob drifts out of step the moment
-    speed changes, and it always looks wrong without anyone being able to say why.</p>
+    <span class="lbl">Honest about this</span>
+    <p>These are placeholders with a purpose. They are not AAA foley, and real recordings will
+    replace the files. But they let the whole footstep system be built, heard and tuned now, and
+    when recordings arrive <em>only the files change</em> &mdash; not a line of code, not one asset
+    reference.</p>
   </div>
 
-  <h2>Three decisions made now to avoid pain later</h2>
+  <h2>Part four &mdash; the engine, not the sounds</h2>
+
+  <p>
+    The point of the session was never the sounds; it was the machine that plays them. Eight C++
+    classes, and every value they use sits in <strong>Project Settings &rsaquo; Game &rsaquo;
+    Seawall Audio</strong> &mdash; 47 dials, tunable by ear while the game runs, with no recompile.
+  </p>
+
+  <ul class="check">
+    <li class="d"><strong>Sound sets</strong> &mdash; a footstep is not a file but eight takes, picked at random, never repeating the last three, with small random level and pitch. Everything in the game plays through this one object</li>
+    <li class="d"><strong>Surfaces</strong> &mdash; a trace under the foot reads the physical material, so concrete, grit, puddles, metal grating and glass are different instruments. A box volume can override the floor as well, so a puddle needs no material of its own</li>
+    <li class="d"><strong>Attenuation with occlusion</strong> &mdash; four presets for how a sound fades with distance and how much a wall muffles it. A sound through concrete must become <em>dull</em>, not merely quieter; that is what makes a building feel solid</li>
+    <li class="d"><strong>Random emitters</strong> &mdash; a drip every 3.0&nbsp;s at the same pitch becomes wallpaper in ten seconds. These randomise interval, position and pitch, and can be told to play only <em>behind</em> the player</li>
+    <li class="d"><strong>Scare recipes</strong> &mdash; silence drop, stinger, follower footsteps, distant slam, light surge. Each is defined once in the director, so a scare is re-tuned in one place instead of twenty</li>
+  </ul>
+
+  <p>
+    The one worth describing is <strong>follower footsteps</strong>: the player's own step timings,
+    replayed a fifth of a second late from several metres behind them, still walking for half a
+    second after the player stops. It costs nothing, it uses sounds already loaded, and it is the
+    most unpleasant thing in the build so far.
+  </p>
+
+  <h2>Part five &mdash; your heart does not stop when you do</h2>
+
+  <p>
+    The first version drove heart rate from the stamina bar, and it was wrong in a way that was
+    obvious the moment it was heard: stamina refills in a few seconds, so sprinting and then
+    standing still made the heartbeat fade almost immediately. Real bodies do not work like that.
+    Heart rate <em>peaks after you stop</em> &mdash; which is exactly why slowing down feels worse
+    than running. You were busy running; now there is nothing to do but listen to yourself.
+  </p>
+
+  <p>So exertion became its own value, separate from the stamina the gameplay uses:</p>
+
+  <pre class="good">if (bSprinting)
+{
+    Exertion += ExertionRisePerSecond * DeltaTime;      // 0.30 per second
+}
+else
+{
+    if (bWasSprinting)
+    {
+        Exertion += ExertionSprintStopBump;            // +0.18 the frame you stop
+    }
+    Exertion -= ExertionDecayPerSecond * DeltaTime;     // 0.07 per second
+}</pre>
+
+  <p>
+    The climb is four times faster than the recovery, and stopping gives it a kick. Sprint for four
+    seconds and the heart is hammering; stop, and it climbs for another beat before it begins,
+    slowly, to come down. The stamina bar still acts as a floor, so an empty bar always means a
+    working body &mdash; but it no longer ends the sound the moment it refills.
+  </p>
+
+  <div class="note lesson">
+    <span class="lbl">Lesson</span>
+    <p>Reusing a gameplay number because it is already there is how audio ends up feeling like a
+    user interface. Stamina is a rule; a heartbeat is a body. They had to be two values.</p>
+  </div>
+
+  <h2>Part six &mdash; three traps that cost real time</h2>
 
   <div class="log">
-
     <div class="entry">
       <div class="seq">1</div>
       <div>
-        <div class="entry-head"><h3>The camera hangs off a body that does not exist yet</h3><span class="tag done">Hook</span></div>
-        <p>
-          <code>FirstPersonBody</code> is an empty <code>USkeletalMeshComponent</code>, and the
-          camera is attached to <em>it</em> rather than to the capsule. Pointless today. At M3, when
-          a MetaHuman arrives, it becomes a mesh assignment instead of a restructure &mdash;
-          <code>HeadSocketName</code> and <code>HeadSocketDamping</code> are already waiting.
-        </p>
-        <div class="note">
-          <span class="lbl">Why damping is already in the design</span>
-          <p>A true first-person body drives the camera from the head bone. Piping raw head-bone
-          motion straight into the view is precisely what makes players sick, so the camera must
-          <em>follow</em> the head with damping rather than being welded to it. Designing that in
-          from the start costs one float. Retrofitting it means rewriting the camera.</p>
+        <div class="entry-head"><h3>The 5,605-byte zip file</h3><span class="tag fixed">Fixed</span></div>
+        <p>All five parts of the bundle downloaded in three seconds flat, at 5,605 bytes each. The
+        server sits behind Cloudflare, which answers anything that does not look like a browser
+        with a small <code>403 Forbidden</code> web page &mdash; and the download tool obediently
+        saved that page under the name of the zip.</p>
+        <pre class="good">plain request      HTTP/1.1 403 Forbidden   Content-Length: 5605
+browser headers    HTTP/1.1 200 OK          Content-Length: <span class="hl-good">1301592146</span></pre>
+        <div class="note lesson">
+          <span class="lbl">Lesson</span>
+          <p>A download that &ldquo;succeeded&rdquo; is not a download that worked. Check the size,
+          and check the first bytes &mdash; a zip begins with <code>PK</code>.</p>
         </div>
       </div>
     </div>
@@ -639,19 +769,16 @@ ul.plain li { margin-bottom: 7px; max-width: 66ch; }
     <div class="entry">
       <div class="seq">2</div>
       <div>
-        <div class="entry-head"><h3>Footsteps already shout into an empty room</h3><span class="tag done">Wired</span></div>
-        <p>
-          Every footstep reports a hearing event &mdash; walk 400, sprint 1400, crouch 120, landing
-          900 units. Nothing listens. Nothing will until M2.
-        </p>
-        <pre class="good">UAISense_Hearing::ReportNoiseEvent(
-    GetWorld(), GetActorLocation(), Loudness, this, Range, TEXT("Footstep"));</pre>
+        <div class="entry-head"><h3>The download that had not stalled</h3><span class="tag fixed">Fixed</span></div>
+        <p>A 30&nbsp;GB download appeared frozen: the file size had not moved in eight minutes, so
+        it was killed and restarted with stall detection. Checked again, the file was at
+        173&nbsp;MB &mdash; far past where it had supposedly stopped. Windows does not keep a
+        file size up to date while another program is still writing to it. The download had been
+        healthy the whole time.</p>
         <div class="note lesson">
           <span class="lbl">Lesson</span>
-          <p>The whole horror loop rests on the creature hearing you. Adding that <em>after</em>
-          movement exists means auditing every code path that can move a player &mdash; walking,
-          sprinting, landing, being pushed, ledge grabs that do not exist yet. Adding it while
-          there is exactly one path costs four lines.</p>
+          <p>While something is being written, the size on disk is a rumour. Trust the writer log,
+          not the file listing.</p>
         </div>
       </div>
     </div>
@@ -659,132 +786,61 @@ ul.plain li { margin-bottom: 7px; max-width: 66ch; }
     <div class="entry">
       <div class="seq">3</div>
       <div>
-        <div class="entry-head"><h3>Input that needs no content authored</h3><span class="tag done">Done</span></div>
-        <p>
-          Enhanced Input normally wants Input Action and Mapping Context <em>assets</em> created by
-          hand before a single key works. Instead the character builds them in code when none are
-          assigned &mdash; so it ran the moment it compiled, with zero content. Every action is still
-          an exposed property, so assigning real assets later makes them rebindable without touching
-          code.
-        </p>
+        <div class="entry-head"><h3>MetaSounds, and the door that opened instead</h3><span class="tag fixed">Changed</span></div>
+        <p>The plan was to build everything in MetaSounds, Unreal procedural audio graphs. Those
+        graphs have to be <em>authored</em>, and automating the editor interface to do it proved
+        unreliable. So the design changed: plain sound files driven by C++, which gives the same
+        result for everything this game needs and removes a dependency outright. MetaSounds became
+        an optional upgrade rather than a foundation.</p>
+        <p>The replacement turned out better than the original plan. Unreal has a Python plugin that
+        can listen for commands over the local network &mdash; <strong>Remote Execution</strong>
+        &mdash; so a script running outside the editor can reach into the live editor and build
+        assets directly. That is how the 18 data assets, four attenuation presets and eight placed
+        ambience actors in this session were made: by script, each value read back to confirm it,
+        with nothing clicked by hand.</p>
+        <div class="note lesson">
+          <span class="lbl">Lesson</span>
+          <p>When a plan depends on a fragile tool, the question is not how to automate the tool. It
+          is whether the plan needs it at all.</p>
+        </div>
       </div>
     </div>
-
   </div>
-
-  <h2>The bug that put the player's eyes at ankle height</h2>
-
-  <p>
-    Standing worked. Crouching would have dropped the view to roughly <strong>54&nbsp;cm</strong> off
-    the floor &mdash; not crouched, lying down. Nobody had crouched yet, so nobody had seen it.
-  </p>
-  <p>
-    The cause is a mismatch between two systems that both look correct alone. The camera sits at a
-    fixed offset from <code>FirstPersonBody</code>, which is placed at the capsule's base for a
-    <em>standing</em> capsule. But when Unreal crouches a character it <strong>shrinks the capsule
-    and drops the actor</strong> so the feet stay planted &mdash; and that fixed offset no longer
-    points at the floor.
-  </p>
-  <pre class="bad">standing:  capsule centre 92 above floor, body at &minus;92, eye +174 &rarr; <span class="hl-good">174 ✓</span>
-crouched:  capsule centre 50 above floor, body at &minus;92, eye +98  &rarr; <span class="hl-bad">56 ✗</span></pre>
-  <pre class="good">const float HalfHeightCompensation =
-    GetDefaultHalfHeight() - GetCapsuleComponent()-&gt;GetUnscaledCapsuleHalfHeight();
-<span class="dim">// crouched: 92 - 50 = 42, added back &rarr; eye lands at 98 above the floor</span></pre>
-  <p>
-    The body offset is now derived from the capsule rather than hard-coded, so the two cannot drift
-    apart again.
-  </p>
-
-  <div class="note lesson">
-    <span class="lbl">Lesson</span>
-    <p>Two correct-looking systems can be wrong together. A constant copied from one place into
-    another is a bug waiting for someone to change the original &mdash; derive it instead.</p>
-  </div>
-
-  <h2>Height, and the wrong thing to blame</h2>
-
-  <p>
-    First walkthrough verdict: <em>&ldquo;it looks like our main character is a dwarf.&rdquo;</em>
-    The eye sat at 165&nbsp;cm &mdash; a 175&nbsp;cm person. Entirely normal.
-  </p>
-  <div class="note">
-    <span class="lbl">The corridor is the problem, not the character</span>
-    <p>The ceiling is at <strong>4 metres</strong>. Real corridors are 2.4&ndash;3&nbsp;m. Under a
-    ceiling a third taller than reality, <em>any</em> human reads as short. The character went to
-    184&nbsp;cm because it was asked for, but the honest fix is dropping the ceiling &mdash; which
-    would also make the corridor more oppressive, which is the point of the whole level.</p>
-  </div>
-
-  <h2>Jump: forgiveness, not height</h2>
-
-  <p>
-    Jump strength varies by what you were doing &mdash; standing 340, walking 385, sprinting 445,
-    with sprint leaps costing double stamina and getting a little more air control so they can be
-    aimed. But the strength is not what makes a jump feel good.
-  </p>
-
-  <div class="tw">
-    <table>
-      <thead><tr><th>Mechanic</th><th>Window</th><th>What it fixes</th></tr></thead>
-      <tbody>
-        <tr><td><strong>Coyote time</strong></td><td>0.12s</td><td>A jump pressed just <em>after</em> walking off a ledge still counts. Players press late; this forgives it</td></tr>
-        <tr><td><strong>Input buffering</strong></td><td>0.16s</td><td>A jump pressed just <em>before</em> landing fires on touchdown instead of being swallowed</td></tr>
-        <tr><td><strong>Variable height</strong></td><td>&times;0.45 on release</td><td>Tap for a hop, hold for the full arc. One button, two intentions</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="note lesson">
-    <span class="lbl">Why this matters more than the numbers</span>
-    <p>Without these three, roughly one press in five appears to be ignored &mdash; and it genuinely
-    was ignored, correctly, by a system that only accepts input during the exact frames the player
-    is grounded. Players do not experience that as their own mistiming. They experience it as the
-    game being unresponsive. All three mechanics exist to accept input the player <em>meant</em>
-    rather than input they precisely delivered.</p>
-  </div>
-
-  <h2>What was deliberately not built</h2>
-
-  <ul class="check">
-    <li class="o"><strong>Arms and hands</strong> &mdash; only visible while holding something, and nothing exists to hold. The rig depends entirely on whether it is a flashlight, a lighter or a crowbar. Build now, build twice</li>
-    <li class="o"><strong>A flashlight model</strong> &mdash; it is a bare spot light on the camera. Correct for a prototype</li>
-    <li class="o"><strong>A true first-person body</strong> &mdash; wanted as a feature, deferred to M3, and built from MetaHuman rather than by hand. Legs that do not quite match where your feet are break immersion worse than seeing nothing</li>
-  </ul>
 
   <h2>Where things stand</h2>
 
   <ul class="check">
-    <li class="d">First-person character with weighted movement, stamina, lean, crouch and jump</li>
-    <li class="d">Camera feel: distance-driven bob, landing dip, exhaustion breathing, sprint FOV push</li>
-    <li class="d">Flashlight with battery wired but drain at zero</li>
-    <li class="d">Footstep hearing events broadcasting, ready for M2</li>
-    <li class="d">Game mode in C++, PlayerStart in the corridor, Play works</li>
-    <li class="d">The corridor has been walked. This was the whole point</li>
-    <li class="o">No audio at all &mdash; a horror corridor in silence cannot really be judged</li>
-    <li class="o"><code>stat unit</code> still never run. No performance baseline exists</li>
-    <li class="o">Nothing hunts you yet. That is M2, and it is the actual game</li>
+    <li class="d">Eight C++ audio classes, compiling: sound sets, surface map, settings, director, player body audio, surface volumes, random emitters, scare triggers</li>
+    <li class="d">86 sounds generated: heartbeats, tinnitus, drone, cluster, riser, stingers, body thuds, electrical arcs, and 70 footstep takes</li>
+    <li class="d">111 audio assets in the project, 18 of them data assets wired by script and verified</li>
+    <li class="d">The corridor has room tone, six detuned fluorescent hums, a faulty fixture, electrical crackle, a dread zone and a stinger trigger</li>
+    <li class="d">Heart rate and breathing driven by exertion and fear, not by the stamina bar</li>
+    <li class="o"><strong>Real footsteps and breathing</strong> &mdash; the synthesised ones are placeholders, and the full GDC 2019 libraries are still downloading</li>
+    <li class="o">Submixes and a master limiter, so the whole mix can be ducked and low-passed as one</li>
+    <li class="o">Reverb per space &mdash; the corridor and the side rooms should not sound the same</li>
+    <li class="o">Measuring the mix: recording the output and checking loudness, since the one thing that cannot be automated is listening</li>
+    <li class="o">Next: the Watchman, which can already drive all of this through a single function call</li>
   </ul>
 
   <div class="note lesson">
     <span class="lbl">The session in one line</span>
-    <p>A pretty corridor is a screenshot. A corridor you can walk down badly is a prototype. The
-    difference is entirely in numbers nobody will ever see.</p>
+    <p>Every sound made this session will eventually be replaced; the machine that plays them will
+    not &mdash; which is why the machine, and not the sounds, was the work.</p>
   </div>
 
-  <a class="pagelink" href="https://billionaires-game-development-journ.vercel.app/fixtures.html">
+  <a class="pagelink" href="https://billionaires-game-development-journ.vercel.app/lumen.html">
     <span class="k">Previously</span>
-    <span class="t">From Prompt to Fixture</span>
-    <span class="d">An AI image becomes a sculpt, a sculpt becomes a game asset, and a light finally glows.</span>
+    <span class="t">The Light That Was Never On</span>
+    <span class="d">Global illumination had been silently switched off for nine days &mdash; and two sessions of lighting were tuned on top of it.</span>
     <span class="arrow" aria-hidden="true">&larr;</span>
   </a>
 
   <div class="foot">
-    <span>SEAWALL &middot; the body you cannot see</span>
-    <span>Session 04 &middot; 7 Sep 2026</span>
+    <span>SEAWALL &middot; the sound of your own body</span>
+    <span>Session 06 &middot; 6 Oct 2026</span>
   </div>
 
 </div>
-
 <script>
 // On narrow screens the nav row scrolls sideways inside the bar. Scroll that row
 // by exactly as much as needed to show the current page's link -- and again once
