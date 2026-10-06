@@ -31,6 +31,13 @@ public class Seawall : ModuleRules
 
 			// Navigation for creature pathing.
 			"NavigationSystem",
+
+			// Audio. PhysicsCore carries EPhysicalSurface, which is how a footstep
+			// knows whether it landed on concrete, a puddle or a steel grating.
+			"PhysicsCore",
+
+			// UDeveloperSettings -- every audio dial lives in Project Settings.
+			"DeveloperSettings",
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]

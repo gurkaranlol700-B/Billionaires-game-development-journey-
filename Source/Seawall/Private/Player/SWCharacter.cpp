@@ -1,5 +1,6 @@
 #include "Player/SWCharacter.h"
 
+#include "Audio/SWPlayerAudioComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -12,6 +13,8 @@
 #include "InputMappingContext.h"
 #include "Net/UnrealNetwork.h"
 #include "Perception/AISense_Hearing.h"
+
+DEFINE_LOG_CATEGORY_STATIC(LogSWCharacter, Log, All);
 
 ASWCharacter::ASWCharacter()
 {
@@ -69,6 +72,8 @@ ASWCharacter::ASWCharacter()
 	Flashlight->SetAttenuationRadius(FlashlightAttenuation);
 	Flashlight->SetLightColor(FlashlightColor);
 	Flashlight->SetCastShadows(true);
+
+	PlayerAudio = CreateDefaultSubobject<USWPlayerAudioComponent>(TEXT("PlayerAudio"));
 
 	CurrentEyeHeight = EyeHeightStanding;
 }
@@ -270,6 +275,10 @@ void ASWCharacter::Input_CrouchToggle()
 	if (bIsCrouched)
 	{
 		UnCrouch();
+		if (PlayerAudio)
+		{
+			PlayerAudio->HandleCrouch(false);
+		}
 	}
 	else
 	{
@@ -278,6 +287,10 @@ void ASWCharacter::Input_CrouchToggle()
 			Input_SprintStop();
 		}
 		Crouch();
+		if (PlayerAudio)
+		{
+			PlayerAudio->HandleCrouch(true);
+		}
 	}
 }
 
@@ -307,16 +320,33 @@ void ASWCharacter::SetFlashlightEnabled(bool bEnabled)
 {
 	bFlashlightOn = bEnabled && (BatteryDrainPerSecond <= 0.f || CurrentBattery > 0.f);
 	Flashlight->SetVisibility(bFlashlightOn);
+
+	if (PlayerAudio)
+	{
+		PlayerAudio->HandleFlashlight(bFlashlightOn);
+	}
 }
 
 void ASWCharacter::Input_LeanLeft(const FInputActionValue& Value)
 {
+	// Triggered fires every frame the key is held, so the rustle is played on the
+	// change only -- otherwise leaning sounds like a bag of crisps.
+	const float Previous = LeanTarget;
 	LeanTarget = Value.Get<bool>() ? -1.f : 0.f;
+	if (PlayerAudio && !FMath::IsNearlyEqual(Previous, LeanTarget))
+	{
+		PlayerAudio->HandleLean(LeanTarget);
+	}
 }
 
 void ASWCharacter::Input_LeanRight(const FInputActionValue& Value)
 {
+	const float Previous = LeanTarget;
 	LeanTarget = Value.Get<bool>() ? 1.f : 0.f;
+	if (PlayerAudio && !FMath::IsNearlyEqual(Previous, LeanTarget))
+	{
+		PlayerAudio->HandleLean(LeanTarget);
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -385,6 +415,11 @@ void ASWCharacter::Input_JumpStart()
 	bHasJumpedSinceGrounded = true;
 	JumpBufferTimer = 0.f;
 	Jump();
+
+	if (PlayerAudio)
+	{
+		PlayerAudio->HandleJump(bSprintJump);
+	}
 }
 
 void ASWCharacter::Input_JumpStop()
@@ -524,6 +559,11 @@ void ASWCharacter::UpdateFootsteps(float DeltaSeconds)
 
 		EmitNoise(Range);
 		OnFootstep(Range, bIsSprinting, bIsCrouched);
+
+		if (PlayerAudio)
+		{
+			PlayerAudio->HandleFootstep(bIsSprinting, bIsCrouched);
+		}
 	}
 }
 
@@ -551,6 +591,11 @@ void ASWCharacter::Landed(const FHitResult& Hit)
 	GetCharacterMovement()->AirControl = AirControlDefault;
 
 	EmitNoise(NoiseRangeLand);
+
+	if (PlayerAudio)
+	{
+		PlayerAudio->HandleLanded(FallSpeed);
+	}
 }
 
 void ASWCharacter::UpdateCamera(float DeltaSeconds)

@@ -20,6 +20,7 @@ class UCameraComponent;
 class USpotLightComponent;
 class UInputAction;
 class UInputMappingContext;
+class USWPlayerAudioComponent;
 
 UCLASS(config = Game, BlueprintType, Blueprintable)
 class SEAWALL_API ASWCharacter : public ACharacter
@@ -279,6 +280,13 @@ public:
 	/** Fired on every footstep so audio and AI can both hang off one event. */
 	UFUNCTION(BlueprintImplementableEvent, Category = "Seawall|Noise")
 	void OnFootstep(float NoiseRange, bool bSprinting, bool bCrouched);
+
+	// ---- audio ------------------------------------------------------------
+	// Everything the player's own body sounds like lives in its own component, so
+	// this class stays about movement. It is told what happened; it decides nothing.
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Seawall|Components")
+	TObjectPtr<USWPlayerAudioComponent> PlayerAudio;
 
 	// ---- interaction ------------------------------------------------------
 
