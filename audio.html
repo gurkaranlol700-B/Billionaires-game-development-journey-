@@ -676,6 +676,12 @@ grit        sand and dust under the sole  brief high noise, a few ms late</pre>
     steps.
   </p>
 
+  <p>
+    That middle layer, the one called <em>body</em>, was a sine wave &mdash; and it was wrong. It
+    took three attempts and two rejections to arrive at footsteps that worked, which is part
+    seven.
+  </p>
+
   <div class="note">
     <span class="lbl">Honest about this</span>
     <p>These are placeholders with a purpose. They are not AAA foley, and real recordings will
@@ -807,6 +813,111 @@ browser headers    HTTP/1.1 200 OK          Content-Length: <span class="hl-good
     </div>
   </div>
 
+  <h2>Part seven &mdash; the footsteps, three times</h2>
+
+  <p>
+    Footsteps are the sound a player hears more than any other, and they took three complete
+    attempts. Each rejection was a one-line verdict that turned out to name the exact technical
+    cause.
+  </p>
+
+  <div class="log">
+    <div class="entry">
+      <div class="seq">1</div>
+      <div>
+        <div class="entry-head"><h3>&ldquo;It sounds like a snare in FL&rdquo;</h3><span class="tag fixed">Rejected</span></div>
+        <p>Correct, and for a precise reason: the body of each step was a sine wave with a decay
+        envelope. That is not an approximation of concrete &mdash; it is exactly how a drum machine
+        synthesises a tom. It had a pitch, so the ear heard a drum. Concrete cannot ring; it is far
+        too stiff and too damped to hold a note, which means a real footstep has no pitch at all.</p>
+      </div>
+    </div>
+
+    <div class="entry">
+      <div class="seq">2</div>
+      <div>
+        <div class="entry-head"><h3>&ldquo;Now it is a wooden plank&rdquo;</h3><span class="tag fixed">Rejected</span></div>
+        <p>The tone was replaced with noise, heel-and-toe pairs were added for weight, and early
+        reflections for space. The result was hollow, and again the verdict named the cause: the
+        low layer decayed over 70 to 150 milliseconds, with five reflections and a 280 ms tail. A
+        low frequency that rings on <em>is</em> a hollow box. Wood resonates; tile and concrete do
+        not.</p>
+        <p>The same round added a second complaint &mdash; a spike at the end of every step &mdash;
+        which was the toe: a second impact 26 to 55 ms after the heel, with the reflection tail
+        arriving behind it. Realistic, and unwanted.</p>
+      </div>
+    </div>
+
+    <div class="entry">
+      <div class="seq">3</div>
+      <div>
+        <div class="entry-head"><h3>Six candidates, built like a kick drum</h3><span class="tag fixed">Approved</span></div>
+        <p>Rather than guess a fourth time, six complete designs were rendered, sequenced into
+        walking loops at the real in-game cadence, and put on a page with players so they could be
+        compared by ear. A footstep is judged in rhythm; one hit in isolation tells you almost
+        nothing.</p>
+        <p>The approved design, K4, is the opposite of realistic foley:</p>
+        <ul class="check">
+          <li class="d"><strong>One impact.</strong> No toe, no tail, so there is nothing left to spike at the end</li>
+          <li class="d"><strong>Narrow-band noise near 95&nbsp;Hz</strong>, not a tone. A real kick drum is a tuned membrane whose body is a descending sine &mdash; a note, and the pitchiness that kept coming back. Noise in a narrow band has the same weight with nothing to hum along to</li>
+          <li class="d"><strong>A flat hold envelope</strong> &mdash; fast attack, 88&nbsp;ms level plateau, quick release. An exponential decay starts loud and collapses, and that collapse is what reads as a spike. Measured, the first third and last third of the step come out at the same level: 0.161 against 0.161</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h2>Part eight &mdash; sound and camera on one clock</h2>
+
+  <p>
+    The last note on the footsteps was that they did not feel synchronised with the character. They
+    were not, and the cause was in the movement code rather than the audio.
+  </p>
+
+  <p>
+    The camera bob ran on <code>sin(BobPhase&nbsp;*&nbsp;2)</code>, whose lowest point falls at
+    three quarters of pi. Footsteps fired when the same phase crossed whole multiples of pi. The
+    sound therefore landed a quarter of a cycle away from the camera dip, every single step &mdash;
+    close enough to look deliberate, far enough to feel wrong.
+  </p>
+
+  <p>
+    Both now come off one counter, <code>StridePhase</code>, measured in whole steps. The footstep
+    fires when it crosses an integer, and the camera curve is drawn from the same number, placed at
+    its lowest a fraction of a step <em>after</em> the footfall &mdash; because a body keeps sinking
+    for a moment after the foot lands, and that moment is what sells the weight. They are
+    synchronised by construction rather than by being tuned to match.
+  </p>
+
+  <p>
+    Fixing that exposed a worse bug sitting next to it. Steps were triggered by distance travelled
+    against a single fixed stride, so faster movement simply meant more steps:
+  </p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th></th><th>Speed</th><th>Stride</th><th>Before</th><th>Now</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Creeping</strong></td><td>75&nbsp;cm/s</td><td>70&nbsp;cm</td><td>1.1 steps/s</td><td>1.08 steps/s</td></tr>
+        <tr><td><strong>Walking</strong></td><td>150&nbsp;cm/s</td><td>87&nbsp;cm</td><td>2.3 steps/s</td><td>1.72 steps/s</td></tr>
+        <tr><td><strong>Sprinting</strong></td><td>420&nbsp;cm/s</td><td>150&nbsp;cm</td><td><span class="hl-bad">6.4 steps/s</span></td><td><span class="hl-good">2.80 steps/s</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    Nobody sprints with the same stride they creep with. Scaling stride with speed turns running
+    from a machine gun into running, and walking was slowed a little at the same time: a step every
+    581&nbsp;ms instead of every 440.
+  </p>
+
+  <div class="note lesson">
+    <span class="lbl">Lesson</span>
+    <p>Three times in a row the verdict was a feeling &mdash; a snare, a wooden plank, out of sync
+    &mdash; and three times it named the exact line of code at fault. A sine wave with an envelope
+    is a drum; a low frequency that rings is a box; two counters for one stride will always drift.
+    Listening is the test. Measuring only explains the result afterwards.</p>
+  </div>
+
   <h2>Where things stand</h2>
 
   <ul class="check">
@@ -815,6 +926,8 @@ browser headers    HTTP/1.1 200 OK          Content-Length: <span class="hl-good
     <li class="d">111 audio assets in the project, 18 of them data assets wired by script and verified</li>
     <li class="d">The corridor has room tone, six detuned fluorescent hums, a faulty fixture, electrical crackle, a dread zone and a stinger trigger</li>
     <li class="d">Heart rate and breathing driven by exertion and fear, not by the stamina bar</li>
+    <li class="d">Footsteps rebuilt as a single kick-style impact with a flat hold, after a snare and a wooden plank, chosen from six candidates by ear</li>
+    <li class="d">Footstep audio and head bob driven by one stride counter, and stride now grows with speed, so sprinting is 2.8 steps a second rather than 6.4</li>
     <li class="o"><strong>Real footsteps and breathing</strong> &mdash; the synthesised ones are placeholders, and the full GDC 2019 libraries are still downloading</li>
     <li class="o">Submixes and a master limiter, so the whole mix can be ducked and low-passed as one</li>
     <li class="o">Reverb per space &mdash; the corridor and the side rooms should not sound the same</li>
@@ -837,7 +950,7 @@ browser headers    HTTP/1.1 200 OK          Content-Length: <span class="hl-good
 
   <div class="foot">
     <span>SEAWALL &middot; the sound of your own body</span>
-    <span>Session 06 &middot; 6 Oct 2026</span>
+    <span>Session 06 &middot; 6 Oct 2026, revised 18 Oct</span>
   </div>
 
 </div>
