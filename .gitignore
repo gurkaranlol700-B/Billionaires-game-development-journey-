@@ -55,3 +55,6 @@ Art/Preview/
 # Superseded intermediate scenes -- Fixtures_Final.blend is the master
 Art/Fixtures.blend
 Art/Fixtures_Working.blend
+
+# Footstep audition renders - working material, not shipped content
+Art/Audio/Auditions/

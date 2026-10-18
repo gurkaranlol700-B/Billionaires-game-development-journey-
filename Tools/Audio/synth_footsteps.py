@@ -1,18 +1,25 @@
-r"""SEAWALL -- synthesised concrete footsteps, jumps and landings.
+r"""SEAWALL -- in-game footsteps. The approved K4 design.
 
-These are PLACEHOLDERS with a purpose: they let the whole footstep engine be
-built, heard and tuned today instead of waiting on recordings. Real foley
-replaces the files, not the system -- the data assets stay exactly as they are.
+HOW THIS ARRIVED HERE (three rounds, two rejected)
+  v1  the body of the step was a sine wave with a decay envelope, which is how a
+      drum machine makes a tom. It had a pitch, so it sounded like a snare.
+  v2  noise instead of tone, but the low end decayed over 70-150 ms with five
+      reflections and a long tail. A low frequency that rings on IS a hollow
+      box, so it sounded like a wooden plank.
+  v3  built like a kick drum, auditioned as six candidates. K4 approved:
 
-A footstep on concrete is three things stacked:
-    transient  the heel striking stone     (very short filtered noise burst)
-    body       the slab answering back     (low resonance, decays fast)
-    grit       sand and dust under the sole (brief high noise tail)
-Change the mix of those three and the same code gives you a careful creep,
-a walk, a run, a scuff or a landing.
+K4, THE APPROVED DESIGN
+  ONE impact, never two. The second ("toe") hit was what read as a spike at the
+  end of every step, so there is none.
+  NARROW-BAND NOISE, not a tone. Centred near 95 Hz with a bandwidth wide
+  enough that no note can be picked out: the weight of a kick with nothing to
+  hum along to.
+  A FLAT HOLD ENVELOPE. Fast attack, a level plateau, then a quick release, so
+  the sound is as bassy at its end as at its beginning. An exponential decay
+  starts loud and collapses, and that collapse is what reads as a spike.
+  NO TAIL, NO REFLECTIONS. Those made it hollow.
 
-    python synth_footsteps.py -o <out dir>            # all sets
-    python synth_footsteps.py -o <dir> --takes 12     # more variations
+    python synth_footsteps.py -o <out dir> --takes 10
 
 Needs numpy + scipy:
   C:\Users\Intel\AppData\Local\Programs\Python\Python310\python.exe
@@ -27,11 +34,13 @@ from scipy.io import wavfile
 from scipy.signal import butter, lfilter, sosfilt
 
 RATE = 48000
-rng = np.random.default_rng(11)
+rng = np.random.default_rng(31)
 
 
-def noise(n: int) -> np.ndarray:
-    return rng.normal(0.0, 1.0, n)
+# --- building blocks -------------------------------------------------------
+
+def noise(n):
+    return rng.normal(0.0, 1.0, int(n))
 
 
 def lowpass(x, hz, order=4):
@@ -39,7 +48,7 @@ def lowpass(x, hz, order=4):
     return lfilter(b, a, x)
 
 
-def highpass(x, hz, order=4):
+def highpass(x, hz, order=2):
     b, a = butter(order, max(hz / (RATE / 2), 1e-4), btype="high")
     return lfilter(b, a, x)
 
@@ -50,78 +59,117 @@ def bandpass(x, lo, hi, order=4):
     return sosfilt(sos, x)
 
 
-def env(n: int, decay: float) -> np.ndarray:
-    return np.exp(-np.linspace(0.0, decay, n))
+def hold_env(n, attack_ms, hold_ms, release_ms):
+    """Fast attack, FLAT plateau, quick release -- the heart of the K4 design.
+
+    The plateau is why the step stays bassy from beginning to end instead of
+    spiking and collapsing.
+    """
+    n = int(n)
+    env = np.zeros(n)
+    a = min(max(2, int(RATE * attack_ms / 1000.0)), n)
+    h = int(RATE * hold_ms / 1000.0)
+    r = max(2, int(RATE * release_ms / 1000.0))
+    env[:a] = np.linspace(0.0, 1.0, a)
+    end_hold = min(n, a + h)
+    env[a:end_hold] = 1.0
+    if end_hold < n:
+        tail = min(r, n - end_hold)
+        # Slightly curved: a straight line clicks, an exponential sags.
+        env[end_hold:end_hold + tail] = np.linspace(1.0, 0.0, tail) ** 1.4
+    return env
 
 
-def norm(x, peak_dbfs):
-    p = np.abs(x).max()
-    return x * ((10 ** (peak_dbfs / 20)) / p) if p > 0 else x
+def exp_env(n, ms):
+    n = int(n)
+    t = np.linspace(0.0, 1.0, n)
+    env = np.exp(-t * (1000.0 / max(ms, 1.0)) * 0.9)
+    a = max(2, int(RATE * 0.0008))
+    env[:a] *= np.linspace(0, 1, a)
+    return env
 
 
-def step(transient_db, body_hz, body_level, grit_level, length_s, decay, peak_dbfs):
-    """One footstep. Randomised a little on every call so no two takes match."""
-    n = int(RATE * length_s)
-    t = np.linspace(0.0, length_s, n, endpoint=False)
-
-    # Heel strike: a click, not a thump. Short and bright.
-    transient = highpass(noise(n), 900) * env(n, decay * 3.2) * (10 ** (transient_db / 20))
-
-    # The slab: two close low resonances, slightly detuned per take.
-    f0 = body_hz * rng.uniform(0.94, 1.06)
-    body = (np.sin(2 * np.pi * f0 * t) + 0.6 * np.sin(2 * np.pi * f0 * 1.47 * t))
-    body *= env(n, decay * 1.6) * body_level
-
-    # Grit under the sole, arriving a hair after the strike like real dust does.
-    grit = bandpass(noise(n), 2200, 9000) * env(n, decay * 2.0) * grit_level
-    delay = int(RATE * rng.uniform(0.004, 0.012))
-    grit = np.concatenate([np.zeros(delay), grit])[:n]
-
-    out = lowpass(transient + body + grit, 15000)
-    # Tiny fade in so there is never a click from sample zero.
-    fade = int(RATE * 0.0008)
-    out[:fade] *= np.linspace(0, 1, fade)
-    return norm(out, peak_dbfs + rng.uniform(-1.5, 1.5))
+def finish(x, peak_dbfs, jitter=True):
+    # Nothing below 38 Hz: no speaker reproduces it, and it only eats level.
+    x = highpass(x, 38.0, order=2)
+    # Soft clip for density without extra level.
+    x = np.tanh(x * 1.5) / 1.5
+    peak = np.abs(x).max()
+    if peak > 0:
+        target = peak_dbfs + (rng.uniform(-0.8, 0.8) if jitter else 0.0)
+        x = x * ((10 ** (target / 20)) / peak)
+    fade = max(2, int(RATE * 0.0005))
+    x[:fade] *= np.linspace(0, 1, fade)
+    out = max(2, int(RATE * 0.008))
+    x[-out:] *= np.linspace(1, 0, out)
+    return x
 
 
-# name -> keyword args for step()
+def step(length_ms, centre_hz, width, attack_ms, hold_ms, release_ms,
+         click_level, click_hz, click_ms, mid_level, peak_dbfs):
+    """One footfall: body, contact click, and a touch of midrange."""
+    n = int(RATE * length_ms / 1000.0)
+    out = np.zeros(n)
+
+    centre = centre_hz * rng.uniform(0.97, 1.03)
+    env = hold_env(n, attack_ms, hold_ms, release_ms)
+
+    # The body. Narrow-band noise: kick weight, no note.
+    out += bandpass(noise(n), centre / width, centre * width) * env * 3.4
+
+    # The contact. Short enough to be an attack rather than a tick.
+    if click_level > 0:
+        out += highpass(noise(n), click_hz) * exp_env(n, click_ms) * click_level
+
+    # A little 220-520 Hz so the step still exists on laptop speakers, which
+    # reproduce almost nothing below 150 Hz.
+    if mid_level > 0:
+        out += bandpass(noise(n), 220.0, 520.0) * hold_env(n, attack_ms, hold_ms * 0.7,
+                                                           release_ms * 0.8) * mid_level
+    return finish(out, peak_dbfs)
+
+
+def scuff(peak_dbfs=-12):
+    """A drag rather than an impact: no attack, dark, short."""
+    length_ms = rng.uniform(260.0, 360.0)
+    n = int(RATE * length_ms / 1000.0)
+    shape = np.sin(np.linspace(0.0, np.pi, n)) ** 1.8
+    body = bandpass(noise(n), 320.0, 2600.0) * shape
+    low = lowpass(noise(n), 220.0) * shape * 0.8
+    rough = 1.0 + 0.25 * np.sin(2 * np.pi * rng.uniform(7.0, 14.0)
+                                * np.linspace(0, length_ms / 1000.0, n))
+    return finish(body * rough + low, peak_dbfs)
+
+
+# K4, scaled per movement. Slowed slightly from the audition: the hold is
+# longer, which makes each step read as heavier and less hurried.
 SETS = {
-    # Careful creep: almost no transient, no grit, very short.
-    "Step_Concrete_Crouch": dict(transient_db=-16, body_hz=110, body_level=0.25,
-                                 grit_level=0.05, length_s=0.16, decay=9.0, peak_dbfs=-13),
-    # Normal walk: balanced.
-    "Step_Concrete_Walk":   dict(transient_db=-7, body_hz=96, body_level=0.45,
-                                 grit_level=0.18, length_s=0.26, decay=7.0, peak_dbfs=-7),
-    # Run: heavier heel, more body, more grit thrown up.
-    "Step_Concrete_Sprint": dict(transient_db=-3, body_hz=82, body_level=0.75,
-                                 grit_level=0.32, length_s=0.34, decay=5.5, peak_dbfs=-4),
-    # Push-off for a jump: body without much heel click.
-    "Step_Concrete_Jump":   dict(transient_db=-9, body_hz=78, body_level=0.8,
-                                 grit_level=0.3, length_s=0.3, decay=6.0, peak_dbfs=-6),
-    # Landing, soft: both feet, a little heavier than a walk step.
-    "Step_Concrete_LandSoft": dict(transient_db=-5, body_hz=74, body_level=0.9,
-                                   grit_level=0.28, length_s=0.4, decay=5.0, peak_dbfs=-5),
-    # Landing, hard: full weight. The synth body thud layers under this.
-    "Step_Concrete_LandHard": dict(transient_db=-1, body_hz=62, body_level=1.3,
-                                   grit_level=0.45, length_s=0.6, decay=3.6, peak_dbfs=-2),
+    "Step_Concrete_Crouch":   dict(length_ms=185, centre_hz=102, width=1.28, attack_ms=1.2,
+                                   hold_ms=52, release_ms=24, click_level=0.10, click_hz=2400,
+                                   click_ms=5, mid_level=0.08, peak_dbfs=-15),
+    "Step_Concrete_Walk":     dict(length_ms=250, centre_hz=95, width=1.26, attack_ms=0.8,
+                                   hold_ms=88, release_ms=28, click_level=0.20, click_hz=2200,
+                                   click_ms=7, mid_level=0.13, peak_dbfs=-8),
+    "Step_Concrete_Sprint":   dict(length_ms=270, centre_hz=90, width=1.28, attack_ms=0.8,
+                                   hold_ms=96, release_ms=32, click_level=0.30, click_hz=2400,
+                                   click_ms=8, mid_level=0.18, peak_dbfs=-5),
+    "Step_Concrete_Jump":     dict(length_ms=265, centre_hz=92, width=1.26, attack_ms=1.0,
+                                   hold_ms=92, release_ms=34, click_level=0.22, click_hz=2000,
+                                   click_ms=8, mid_level=0.15, peak_dbfs=-6),
+    "Step_Concrete_LandSoft": dict(length_ms=285, centre_hz=88, width=1.26, attack_ms=0.8,
+                                   hold_ms=98, release_ms=36, click_level=0.26, click_hz=2200,
+                                   click_ms=8, mid_level=0.16, peak_dbfs=-5),
+    "Step_Concrete_LandHard": dict(length_ms=340, centre_hz=82, width=1.24, attack_ms=0.6,
+                                   hold_ms=118, release_ms=46, click_level=0.38, click_hz=2000,
+                                   click_ms=10, mid_level=0.20, peak_dbfs=-3),
 }
 
 
-def scuff(length_s=0.42, peak_dbfs=-9):
-    """A drag, not an impact: noise swelling then dying, no transient."""
-    n = int(RATE * length_s)
-    shape = np.sin(np.linspace(0, np.pi, n)) ** 1.6
-    body = bandpass(noise(n), 700, 6500) * shape
-    low = lowpass(noise(n), 300) * shape * 0.5
-    wobble = 1 + 0.25 * np.sin(2 * np.pi * rng.uniform(7, 16) * np.linspace(0, length_s, n))
-    return norm(lowpass(body * wobble + low, 12000), peak_dbfs + rng.uniform(-1.5, 1.5))
-
-
-def main() -> int:
+def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("-o", "--out", default=".")
-    p.add_argument("--takes", type=int, default=10, help="variations per set")
-    p.add_argument("--seed", type=int, default=11)
+    p.add_argument("--takes", type=int, default=10)
+    p.add_argument("--seed", type=int, default=31)
     args = p.parse_args()
 
     global rng
@@ -132,18 +180,19 @@ def main() -> int:
     for name in SETS:
         for i in range(1, args.takes + 1):
             audio = step(**SETS[name])
-            path = os.path.join(args.out, f"SW_{name}_{i:02d}.wav")
-            wavfile.write(path, RATE, (np.clip(audio, -1, 1) * 32767).astype(np.int16))
+            wavfile.write(os.path.join(args.out, "SW_%s_%02d.wav" % (name, i)),
+                          RATE, (np.clip(audio, -1, 1) * 32767).astype(np.int16))
             written += 1
-        print(f"{name:26s} {args.takes} takes")
+        print("%-26s %2d takes  centre %3d Hz  hold %3d ms" % (
+            name, args.takes, SETS[name]["centre_hz"], SETS[name]["hold_ms"]))
 
     for i in range(1, args.takes + 1):
         audio = scuff()
-        wavfile.write(os.path.join(args.out, f"SW_Step_Concrete_Scuff_{i:02d}.wav"),
+        wavfile.write(os.path.join(args.out, "SW_Step_Concrete_Scuff_%02d.wav" % i),
                       RATE, (np.clip(audio, -1, 1) * 32767).astype(np.int16))
         written += 1
-    print(f"{'Step_Concrete_Scuff':26s} {args.takes} takes")
-    print(f"\n{written} files -> {args.out}")
+    print("%-26s %2d takes" % ("Step_Concrete_Scuff", args.takes))
+    print("\n%d files -> %s" % (written, args.out))
     return 0
 
 

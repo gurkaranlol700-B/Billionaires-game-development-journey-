@@ -189,10 +189,26 @@ public:
 
 	/** Bob is driven by distance travelled, not by time, so it stays in step at every speed. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|HeadBob")
-	float StepLength = 75.f;
+	float StepLength = 82.f;
+
+	/**
+	 * Stride while sprinting. A walk and a run do not take the same size step --
+	 * with one fixed length, sprinting fired roughly six footsteps a second,
+	 * which sounds like a machine gun. Real sprinting is nearer three.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|HeadBob")
+	float StepLengthSprint = 150.f;
+
+	/**
+	 * Where in the step the camera reaches its lowest point, measured in steps.
+	 * Zero would dip at the instant of contact; a real body keeps sinking for a
+	 * moment after the foot lands, and that moment is what sells the weight.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|HeadBob", meta = (ClampMin = "0.0", ClampMax = "0.5"))
+	float BobImpactPhaseOffset = 0.08f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Seawall|HeadBob")
-	float BobInterpSpeed = 10.f;
+	float BobInterpSpeed = 18.f;
 
 	// ---- landing ----------------------------------------------------------
 
@@ -366,8 +382,13 @@ protected:
 	void BuildFallbackInput();
 
 private:
-	float BobPhase = 0.f;
-	float DistanceSinceStep = 0.f;
+	/**
+	 * Position within the stride, counted in steps: 1.0 means one full step has
+	 * been taken. The footstep sound fires when it crosses a whole number and
+	 * the head bob is drawn from the same value, so the sound and the camera
+	 * cannot drift out of step with each other.
+	 */
+	float StridePhase = 0.f;
 	float CurrentEyeHeight = 165.f;
 	float LandingDip = 0.f;
 	float BreathPhase = 0.f;

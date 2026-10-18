@@ -545,14 +545,27 @@ void ASWCharacter::UpdateFootsteps(float DeltaSeconds)
 		return;
 	}
 
-	// Distance-driven, not time-driven, so steps stay in sync at any speed.
-	DistanceSinceStep += Speed * DeltaSeconds;
-	BobPhase += (Speed * DeltaSeconds / FMath::Max(StepLength, 1.f)) * PI;
+	// Stride grows with speed: creeping takes small steps, sprinting takes long
+	// ones. Scaling it is what stops a sprint firing six footsteps a second.
+	const float Stride = FMath::GetMappedRangeValueClamped(
+		FVector2D(CrouchSpeed, SprintSpeed),
+		FVector2D(StepLength * 0.85f, StepLengthSprint),
+		Speed);
 
-	if (DistanceSinceStep >= StepLength)
+	// Distance-driven, not time-driven, so steps stay in sync at any speed --
+	// and measured in whole steps, so the camera can share the same value.
+	const int32 StepsTaken = FMath::FloorToInt(StridePhase);
+	StridePhase += Speed * DeltaSeconds / FMath::Max(Stride, 1.f);
+
+	// Wrapped by an even number of steps, far from any precision limit, so the
+	// left-right sway keeps the foot it was on.
+	if (StridePhase > 1024.f)
 	{
-		DistanceSinceStep -= StepLength;
+		StridePhase -= 1024.f;
+	}
 
+	if (FMath::FloorToInt(StridePhase) > StepsTaken)
+	{
 		float Range = NoiseRangeWalk;
 		if (bIsCrouched)          { Range = NoiseRangeCrouch; }
 		else if (bIsSprinting)    { Range = NoiseRangeSprint; }
@@ -590,6 +603,10 @@ void ASWCharacter::Landed(const FHitResult& Hit)
 	bHasJumpedSinceGrounded = false;
 	GetCharacterMovement()->AirControl = AirControlDefault;
 
+	// A landing is a footfall, so the stride restarts here. The camera then dips
+	// with the landing instead of wherever the previous stride happened to be.
+	StridePhase = 0.f;
+
 	EmitNoise(NoiseRangeLand);
 
 	if (PlayerAudio)
@@ -612,9 +629,14 @@ void ASWCharacter::UpdateCamera(float DeltaSeconds)
 		const float SpeedAlpha = FMath::Clamp(Speed / FMath::Max(WalkSpeed, 1.f), 0.f, 3.f);
 		if (SpeedAlpha > 0.05f)
 		{
-			// Vertical runs at double frequency: two dips per stride, one per foot.
-			TargetBob.Z = FMath::Sin(BobPhase * 2.f) * BobVerticalAmplitude * SpeedAlpha;
-			TargetBob.Y = FMath::Sin(BobPhase) * BobLateralAmplitude * SpeedAlpha;
+			// Both axes are drawn from the same stride phase the footstep sound
+			// fires on, so they are synchronised by construction rather than by
+			// being tuned to match. The vertical curve is at its lowest exactly
+			// one BobImpactPhaseOffset after each footfall; the lateral sway
+			// takes two steps to complete, which is one per foot.
+			const float Phase = StridePhase - BobImpactPhaseOffset;
+			TargetBob.Z = -FMath::Cos(Phase * 2.f * PI) * BobVerticalAmplitude * SpeedAlpha;
+			TargetBob.Y = FMath::Sin(Phase * PI) * BobLateralAmplitude * SpeedAlpha;
 		}
 	}
 	CurrentBobOffset = FMath::VInterpTo(CurrentBobOffset, TargetBob, DeltaSeconds, BobInterpSpeed);
